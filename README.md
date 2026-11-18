@@ -1,116 +1,167 @@
 # ctyl: hardened Minecraft Java runtimes for Pterodactyl and Calagopus
 
-Minimal, shell-free, signed OCI images for running Minecraft servers under
-[Pterodactyl](https://pterodactyl.io) Wings and
-[Calagopus](https://github.com/calagopus/panel) Wings, or plain Docker. They
-replace the Java "yolks" in an egg's image list. Everything is built here
-from upstream sources: [Wolfi](https://github.com/wolfi-dev/os) packages
-assembled with [apko](https://github.com/chainguard-dev/apko), and
-[melange](https://github.com/chainguard-dev/melange) for the parts we build.
-Nothing depends on a third-party yolk, SDKMAN catalog or Docker Hub image.
+Minimal, shell-free, signed container images for Minecraft servers. They
+drop into the image list of any Pterodactyl or Calagopus egg (or run under
+plain Docker) in place of the usual Java "yolks". Everything is built in this
+repository from upstream sources: [Wolfi](https://github.com/wolfi-dev/os)
+packages assembled with [apko](https://github.com/chainguard-dev/apko), plus
+[melange](https://github.com/chainguard-dev/melange) for the launcher. There
+is no dependency on third-party yolks, SDKMAN or Docker Hub images.
 
-* **No shell, no package manager, no network tools.** The entrypoint is a
-  small statically linked launcher that expands the panel's `STARTUP`
-  template without a shell and `execve`s Java as PID 1.
-* **Security status from evidence, not version strings.** The release gate
-  reads the JDK's embedded source commit and checks it against upstream
-  OpenJDK history for every known advisory. Vulnerable builds cannot be
-  promoted; when Wolfi lags, a signature-verified Corretto or Temurin build
-  is substituted automatically.
-* **Fast response.** Upstream checks run hourly, with a daily full
-  reconciliation, rebuilds when inputs change, and manual emergency dispatch.
-* **Verifiable.** Locked package resolutions, SPDX SBOMs, SLSA provenance,
-  keyless cosign signatures and a signed gate report for every digest. The
-  publish job must reproduce the tested digest bit for bit.
+* **No shell, no package manager, no network tools.** A small static
+  launcher expands the panel's startup command without a shell and runs Java
+  directly as PID 1.
+* **Security status from evidence.** Before an image is published, the
+  release gate checks the source commit embedded in the JDK against upstream
+  OpenJDK history for every known advisory. Vulnerable builds are never
+  promoted. If Wolfi lags behind a fix, a signature-verified Corretto or
+  Temurin build is used instead.
+* **Fast updates.** Upstream Java releases and Wolfi packages are checked
+  hourly, every line is rebuilt and re-tested daily, and emergency releases
+  can be dispatched manually.
+* **Verifiable.** Each published digest carries a keyless cosign signature,
+  SPDX SBOMs, SLSA build provenance and a signed security-gate report. The
+  image was rebuilt bit for bit on a second runner before signing.
 
 ## Images
 
-`ghcr.io/<owner>/<repo>:<tag>`. Floating tags move only to verified
-releases. Every release also gets an immutable tag
-`java_21-wolfi-21.0.13.1-r0-<digest12>`, and every release can be pulled by
-digest.
+Copy an image name into your egg or server settings. Multi-arch:
+`linux/amd64` and `linux/arm64`.
 
-| Tag | Java | Typical Minecraft | Security support until |
-|---|---|---|---|
-| `java_8` | OpenJDK 8u | ≤ 1.16.5, Forge 1.12.2 packs | 2030-12-31 |
-| `java_11` | 11 | 1.16.5 | 2027-10-31 |
-| `java_17` | 17 | 1.18 – 1.20.4 | 2027-10-31 |
-| `java_21` | 21 | 1.20.5 – 1.21.11 | 2029-12-31 |
-| `java_25` | 25 | 26.x | 2031-09-30 |
-| `java_27` | 27 (non-LTS) | 26.x | 2027-03-31 |
+<!-- ctyl:status:begin -->
+_Generated from the [`release-state`](https://github.com/asphyxia-mods/ctyl/tree/release-state) branch by the release pipeline. Last publication: 2026-11-18 12:12 UTC._
 
-Java 22, 23, 24 and 26 are end of life and not built. Status per tag:
-`STATUS.md` on the `release-state` branch.
+| Image | Java | Status | Built | Published | Digest |
+|---|---|---|---|---|---|
+| `ghcr.io/asphyxia-mods/ctyl:java_8` | 1.8.0_514 (wolfi 8.514-r0) | ✅ verified | 2026-11-18 12:04 UTC | [2026-11-18 12:12 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44299717808) | `sha256:a8bbd60ffbb9` |
+| `ghcr.io/asphyxia-mods/ctyl:java_11` | 11.0.33.1 (wolfi 11.0.33.1-r0) | ✅ verified | 2026-11-18 11:45 UTC | [2026-11-18 11:58 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:11fc438dd32a` |
+| `ghcr.io/asphyxia-mods/ctyl:java_17` | 17.0.21.1 (wolfi 17.0.21.1-r0) | ✅ verified | 2026-11-18 11:45 UTC | [2026-11-18 11:56 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:684bc6a6a400` |
+| `ghcr.io/asphyxia-mods/ctyl:java_21` | 21.0.13.1 (wolfi 21.0.13.1-r0) | ✅ verified | 2026-11-18 11:45 UTC | [2026-11-18 11:57 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:7d013666d7dd` |
+| `ghcr.io/asphyxia-mods/ctyl:java_25` | 25.0.5.1 (wolfi 25.0.5.1-r0) | ✅ verified | 2026-11-18 11:44 UTC | [2026-11-18 11:57 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:71e262278046` |
+| `ghcr.io/asphyxia-mods/ctyl:java_27` | 27.0.1.1 (wolfi 27.0.1.1-r0) | ✅ verified | 2026-11-18 11:43 UTC | [2026-11-18 11:57 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:793e47750ceb` |
 
-Each image is multi-arch (`linux/amd64`, `linux/arm64`). It contains glibc,
-the Wolfi OpenJDK JRE (all runtime modules, fonts for headless AWT), CA
-certificates and `ctyl-launch`. It runs as `container` (988:988) in
-`/home/container`.
-[docs/java-distributions.md](docs/java-distributions.md) has the full content
-list and the JRE-vs-JDK trade-off.
+<details><summary>Pinned references (exact digests)</summary>
+
+```
+ghcr.io/asphyxia-mods/ctyl:java_8@sha256:a8bbd60ffbb905cd1d7be712df6d7c5153014be9c43fc51f472f8709ae4d4308
+ghcr.io/asphyxia-mods/ctyl:java_11@sha256:11fc438dd32a9a74208f21593a04f377dec53613db6a5e051dd9a6d891db0e94
+ghcr.io/asphyxia-mods/ctyl:java_17@sha256:684bc6a6a400c9ad4f1dc83b2490fdd214de5c293ce070f96640c3b15895c6d1
+ghcr.io/asphyxia-mods/ctyl:java_21@sha256:7d013666d7ddcd7a335d14b5456068ab991eb72c66571cf1319e44f26b8a2b7a
+ghcr.io/asphyxia-mods/ctyl:java_25@sha256:71e262278046ee3dfb766fb916321eab7f57acedf8458e1a2baa8ecec5759166
+ghcr.io/asphyxia-mods/ctyl:java_27@sha256:793e47750ceb7d01555499eceb31b3ec79a19975d2bff22f6749cb6ce8aed9ec
+```
+
+</details>
+<!-- ctyl:status:end -->
+
+Statuses: ✅ verified (every known advisory is verified fixed or not
+applicable) · ⏳ awaiting verification · ❌ vulnerable (no fixed build exists
+yet; the tag stays on the last published image and an issue is open) ·
+⛔ unsupported (past its security support date). Details:
+[docs/security-policy.md](docs/security-policy.md).
+
+| Tag | Use for | Security support until |
+|---|---|---|
+| `java_8` | Minecraft ≤ 1.16.5, Forge 1.12.2 modpacks | 2030-12-31 |
+| `java_11` | 1.16.5 | 2027-10-31 |
+| `java_17` | 1.18 – 1.20.4 | 2027-10-31 |
+| `java_21` | 1.20.5 – 1.21.11 | 2029-12-31 |
+| `java_25` | 26.x | 2031-09-30 |
+| `java_27` | 26.x (non-LTS) | 2027-03-31 |
+
+Java 22, 23, 24 and 26 are end of life and not built. A tag never moves to a
+different Java major version.
 
 ## Using them
 
-In the egg (or per server), select the image:
+**Pterodactyl / Calagopus egg:** list the images in the egg's Docker images:
 
 ```json
-"docker_images": { "Java 21": "ghcr.io/OWNER/REPO:java_21" }
+"docker_images": {
+  "Java 27": "ghcr.io/asphyxia-mods/ctyl:java_27",
+  "Java 25": "ghcr.io/asphyxia-mods/ctyl:java_25",
+  "Java 21": "ghcr.io/asphyxia-mods/ctyl:java_21",
+  "Java 17": "ghcr.io/asphyxia-mods/ctyl:java_17",
+  "Java 11": "ghcr.io/asphyxia-mods/ctyl:java_11",
+  "Java 8": "ghcr.io/asphyxia-mods/ctyl:java_8"
+}
 ```
 
-Startup commands work unchanged: `{{VARIABLES}}`, quoting, `-jar forge-*.jar`
-globs, and the Forge/NeoForge
+…or set one per server under **Startup → Docker Image** (Pterodactyl's
+"custom image" field, or Calagopus's image selector).
+
+Existing startup commands work unchanged: `{{VARIABLES}}`, quoting,
+`-jar forge-*.jar` globs and the Forge/NeoForge
 `$( [[ ! -f unix_args.txt ]] && printf %s "-jar {{SERVER_JARFILE}}" || printf %s "@unix_args.txt" )`
 idiom (evaluated without a shell). Shell operators such as `;`, `|` or `>`
 are rejected with a clear message ([docs/launcher.md](docs/launcher.md)).
-Install scripts keep using the egg's installer image.
+Install scripts keep running in the egg's installer image.
 
-Verify before trusting a digest:
+**Plain Docker:**
 
 ```sh
-cosign verify ghcr.io/OWNER/REPO@sha256:… \
-  --certificate-identity-regexp '^https://github.com/OWNER/REPO/.github/workflows/' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+docker run -d --name mc -it -p 25565:25565 -v /srv/mc:/home/container \
+  --read-only --tmpfs /tmp:rw,exec,nosuid,size=256m --cap-drop ALL --security-opt no-new-privileges \
+  -e 'STARTUP=java -Xms128M -XX:MaxRAMPercentage=95.0 -jar {{SERVER_JARFILE}}' -e SERVER_JARFILE=server.jar \
+  ghcr.io/asphyxia-mods/ctyl:java_21
 ```
 
-Publishing does not restart servers. Wings/Calagopus pick up a new image
-only on the next start, and Calagopus caches pulls for 5 minutes.
-`ctyl-deploy` finds outdated servers, pre-pulls the verified digest, stops
-servers gracefully (never a forced kill), restarts them, verifies the running
-digest and rolls back on failure ([docs/deployment.md](docs/deployment.md)).
+**Verify an image** before trusting it:
 
-## Tested
+```sh
+cosign verify ghcr.io/asphyxia-mods/ctyl:java_21 \
+  --certificate-identity-regexp '^https://github.com/asphyxia-mods/ctyl/.github/workflows/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://ghcr.io/asphyxia-mods/ctyl:java_21 --repo asphyxia-mods/ctyl
+```
 
-Run in this environment (2026-11-18, amd64), using a harness that creates
-containers through the Docker API with the exact settings Pterodactyl Wings
-and Calagopus Wings use (read-only rootfs, `/tmp` tmpfs, dropped
-capabilities, `no-new-privileges`, TTY + stdin, daemon UID):
+**Updating servers:** publishing doesn't restart servers. A new image is
+picked up the next time a server starts (Calagopus may reuse a pull from the
+last 5 minutes). `ctyl-deploy` finds servers on outdated digests, pre-pulls
+the verified one, stops each server gracefully, restarts it, checks the
+running digest and rolls back on failure
+([docs/deployment.md](docs/deployment.md)).
 
-* **Runtime probe on every line:** TLS (valid and rejected certificates),
-  DNS, fonts and PNG encoding, crypto, `ProcessBuilder`, `Unsafe`, modules,
-  Unicode file names, time zones, PID 1, no other processes, no listening
-  sockets, no capabilities. Also covered: `--cap-drop ALL`, `--network none`,
-  noexec `/tmp`, arbitrary UIDs, `-javaagent`, memory limits, SIGTERM/SIGINT
-  and console input, root refusal, and the absence of any shell.
-* **Real servers** (start, console input, `stop`, persistence, restart under
-  the other daemon's settings, SIGTERM with proof the world was saved):
-  Forge 1.12.2 and vanilla 1.16.5 on Java 8; vanilla 1.16.5 on 11; Paper
-  1.20.4 and Forge 1.20.1 on 17; Paper 1.21.11, Fabric 1.21.11 (+ Fabric API,
-  Lithium, spark) and NeoForge 21.1.267 on 21; vanilla, Paper and Fabric 26.3
-  on 25; vanilla and Paper 26.3 on 27. Results are in
+## What's inside
+
+glibc, the Wolfi OpenJDK JRE (all runtime modules, fonts for headless AWT),
+CA certificates and `ctyl-launch`, running as `container` (988:988) in
+`/home/container` with a read-only root filesystem. Not included: any shell,
+BusyBox, package manager, curl/wget/git, SSH, compilers or debuggers.
+Network-service binaries shipped by the JRE packages (`rmiregistry`,
+`jwebserver`, ALSA's `aserver`, …) have their exec bits removed.
+[docs/java-distributions.md](docs/java-distributions.md) has the full list
+and the JRE-vs-JDK trade-off: `jdk.attach` is absent, while `-javaagent`
+works.
+
+## How it is tested
+
+Every release runs these on native amd64 and arm64 GitHub runners, and they
+were also run locally:
+
+* **Runtime probe on every line, under the exact container settings of
+  Pterodactyl Wings and Calagopus Wings:** TLS (valid certificates accepted,
+  expired rejected), DNS, fonts and image encoding, crypto, process spawning,
+  modules, Unicode file names, time zones, PID 1, no other processes, no
+  listening sockets, no capabilities. Also checked: `--cap-drop ALL`,
+  `--network none`, noexec `/tmp`, arbitrary UIDs, `-javaagent`, memory
+  limits, SIGTERM/SIGINT, console input, root refusal, and the absence of
+  any shell.
+* **Real servers:** start, console input, `stop`, persistence, a restart
+  under the other daemon's settings, and SIGTERM with proof the world was
+  saved. The set: Forge 1.12.2 and vanilla 1.16.5 on Java 8; vanilla 1.16.5
+  on 11; Paper 1.20.4 and Forge 1.20.1 on 17; Paper 1.21.11, Fabric 1.21.11
+  (+ Fabric API, Lithium, spark) and NeoForge 21.1.267 on 21; vanilla, Paper
+  and Fabric 26.3 on 25; vanilla and Paper 26.3 on 27 (arm64 runs the vanilla
+  and Paper subset). Results:
   [docs/compatibility.md](docs/compatibility.md).
-* **Security gate regression with real artifacts**
+* **Security-gate regression with real artifacts**
   (`tests/security/regression.sh`): Wolfi's pre-Java4Shell-fix
-  `openjdk-17 17.0.21.0.3-r1` is rejected; with Wolfi "lagging", verified
-  Corretto 17.0.21.1.2 is substituted.
-* **Release path rehearsal** against a local registry: independent rebuild
-  reproduced the tested digest, then sign, SBOM and gate attestations,
-  verification, promotion, and deployment status on simulated Wings
-  containers.
+  `openjdk-17 17.0.21.0.3-r1` is rejected, and with Wolfi "lagging",
+  verified Corretto 17.0.21.1.2 is substituted.
 
-**Not yet run:** the GitHub Actions workflows themselves (the repository has
-not been pushed), arm64 native runners, keyless signing on GitHub, and a
-rollout against a live panel. See
-[docs/operations.md](docs/operations.md#one-time-repository-setup).
+Not yet exercised: a `ctyl-deploy` rollout against a live panel. Its panel
+API code is tested against simulated Pterodactyl and Calagopus APIs.
 
 ## Documentation
 
@@ -148,7 +199,7 @@ make image LINE=21 ARCHS=x86_64 # build/java_21/<dist>/image.tar + gate.json + S
 make image-test LINE=21
 ```
 
-Needs Linux with Docker, bubblewrap (melange), and qemu-user binfmt for
+Needs Linux with Docker, bubblewrap (for melange), and qemu-user binfmt for
 cross-arch package builds.
 
 ## Licence

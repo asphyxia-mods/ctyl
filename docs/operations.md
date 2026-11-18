@@ -2,25 +2,21 @@
 
 ## One-time repository setup
 
-These steps were not done in this environment; they need the GitHub
-repository owner.
+Done for `asphyxia-mods/ctyl`. To set up a fork, follow the same steps:
 
-1. Push the repository to GitHub. The image name is
-   `ghcr.io/<owner>/<repo>`, derived from `github.repository`.
-2. **Settings → Actions → General**: set "Workflow permissions" to
-   *read repository contents* (jobs request what they need). Allow GitHub
-   Actions to create issues (default).
-3. Create the `security-release` issue label (optional; alerts fall back to
-   no label).
-4. After the first publication, make the GHCR package **public** (Packages →
-   package settings) so panels can pull anonymously, and link it to the
-   repository.
-5. Branch protection on `main` as desired. The `release-state` branch is
-   written by the workflow's `GITHUB_TOKEN`: allow `github-actions[bot]` to
-   push to it, or leave it unprotected.
-6. Optional: an external webhook relay can trigger
-   `repository_dispatch` with `event_type=upstream-release`
-   (`client_payload.lines` = e.g. `"17,21"`).
+1. The image name is `ghcr.io/<owner>/<repo>`, derived from
+   `github.repository`.
+2. **Organization settings → Packages → Package creation** must allow
+   **public** packages. With only private allowed, the first push fails with
+   `DENIED` on the manifest PUT.
+3. After the first publication, set the GHCR package visibility to
+   **public** (Package settings → Change visibility) so panels can pull
+   anonymously.
+4. The workflows commit to `release-state` (state records) and to `main`
+   (the README status section) as `github-actions[bot]` using
+   `GITHUB_TOKEN`. If you protect these branches, allow that.
+5. Optional: an external webhook relay can trigger `repository_dispatch` with
+   `event_type=upstream-release` (`client_payload.lines`, e.g. `"17,21"`).
 
 No other secrets are needed. Registry pushes use `GITHUB_TOKEN` and signing
 uses keyless OIDC.
@@ -36,6 +32,9 @@ uses keyless OIDC.
   only the status is refreshed.
 * **Push to `main`** touching image inputs, policy or tooling runs the same
   planner.
+* After every recorded publication or status change, the pipeline
+  regenerates the image table in `README.md` (between the
+  `ctyl:status` markers) and commits it to `main` if it changed.
 * Alerts go to two issues: **"Security status alerts"** (updated in place,
   closed automatically when clear) and **"Release pipeline failure"** (one
   comment per failed run).

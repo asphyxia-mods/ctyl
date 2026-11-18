@@ -39,7 +39,7 @@ build, a match also proves that the published bytes are the tested bytes.
 * **SPDX SBOM attestations**: one for the index and one for each platform
   manifest. apko generates them from the installed package database.
 * **Security gate attestation**: predicate type
-  `https://github.com/OWNER/REPO/attestations/security-gate/v1`. It contains
+  `https://github.com/asphyxia-mods/ctyl/attestations/security-gate/v1`. It contains
   the full gate report: runtime version, source commit, findings, evidence,
   policy digest and package list per architecture.
 * The **release state** (`release-state` branch) records the digest,
@@ -49,16 +49,16 @@ build, a match also proves that the published bytes are the tested bytes.
 Verify a release:
 
 ```sh
-IMG=ghcr.io/OWNER/REPO@sha256:...
-ID='^https://github.com/OWNER/REPO/.github/workflows/'
+IMG=ghcr.io/asphyxia-mods/ctyl@sha256:...
+ID='^https://github.com/asphyxia-mods/ctyl/.github/workflows/'
 cosign verify "$IMG" --certificate-identity-regexp "$ID" \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 cosign verify-attestation "$IMG" --type spdxjson --certificate-identity-regexp "$ID" \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com | jq -r .payload | base64 -d | jq .predicate.name
-cosign verify-attestation "$IMG" --type https://github.com/OWNER/REPO/attestations/security-gate/v1 \
+cosign verify-attestation "$IMG" --type https://github.com/asphyxia-mods/ctyl/attestations/security-gate/v1 \
   --certificate-identity-regexp "$ID" --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   | jq -r .payload | base64 -d | jq '.predicate | {status, promotable, architectures: [.architectures[] | {arch, runtime_version, source_commit, findings}]}'
-gh attestation verify "oci://$IMG" --repo OWNER/REPO
+gh attestation verify "oci://$IMG" --repo asphyxia-mods/ctyl
 ```
 
 The local rehearsal (`localhost:5000`, key-based signing) verified that the

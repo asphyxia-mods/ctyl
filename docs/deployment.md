@@ -7,11 +7,11 @@ Point the egg's image list at the tags (both panels use the egg's
 
 ```json
 "docker_images": {
-  "Java 25": "ghcr.io/OWNER/REPO:java_25",
-  "Java 21": "ghcr.io/OWNER/REPO:java_21",
-  "Java 17": "ghcr.io/OWNER/REPO:java_17",
-  "Java 11": "ghcr.io/OWNER/REPO:java_11",
-  "Java 8":  "ghcr.io/OWNER/REPO:java_8"
+  "Java 25": "ghcr.io/asphyxia-mods/ctyl:java_25",
+  "Java 21": "ghcr.io/asphyxia-mods/ctyl:java_21",
+  "Java 17": "ghcr.io/asphyxia-mods/ctyl:java_17",
+  "Java 11": "ghcr.io/asphyxia-mods/ctyl:java_11",
+  "Java 8":  "ghcr.io/asphyxia-mods/ctyl:java_8"
 }
 ```
 
@@ -60,17 +60,17 @@ the servers. Keep the key in a file or in `CTYL_PANEL_TOKEN`, never on the
 command line.
 
 ```sh
-STATE=https://raw.githubusercontent.com/OWNER/REPO/release-state/state
+STATE=https://raw.githubusercontent.com/asphyxia-mods/ctyl/release-state/state
 
 # On a node: which containers run outdated digests, and why it matters
-ctyl-deploy status   --repo ghcr.io/OWNER/REPO --state-url $STATE
+ctyl-deploy status   --repo ghcr.io/asphyxia-mods/ctyl --state-url $STATE
 # On a node: pull and tag the verified digests ahead of a maintenance window
-ctyl-deploy prefetch --repo ghcr.io/OWNER/REPO --state-url $STATE \
-    --verify-identity '^https://github.com/OWNER/REPO/.github/workflows/'
+ctyl-deploy prefetch --repo ghcr.io/asphyxia-mods/ctyl --state-url $STATE \
+    --verify-identity '^https://github.com/asphyxia-mods/ctyl/.github/workflows/'
 
 # Roll out (asks for confirmation; one server at a time; stops at the first failure)
 ctyl-deploy rollout --panel pterodactyl --url https://panel.example.com \
-    --token-file /etc/ctyl/panel.key --repo ghcr.io/OWNER/REPO --state-url $STATE \
+    --token-file /etc/ctyl/panel.key --repo ghcr.io/asphyxia-mods/ctyl --state-url $STATE \
     --node --backup --window "Sat,Sun 04:00-06:00" --timezone Europe/Berlin
 ```
 
@@ -152,7 +152,7 @@ docker run -d --name mc --read-only --tmpfs /tmp:rw,exec,nosuid,size=256m \
   --cap-drop ALL --security-opt no-new-privileges --pids-limit 512 \
   --memory 4g -p 25565:25565 -v /srv/mc:/home/container -it \
   -e 'STARTUP=java -Xms128M -XX:MaxRAMPercentage=95.0 -jar {{SERVER_JARFILE}}' \
-  -e SERVER_JARFILE=server.jar ghcr.io/OWNER/REPO:java_21@sha256:…
+  -e SERVER_JARFILE=server.jar ghcr.io/asphyxia-mods/ctyl:java_21@sha256:…
 docker stop -t 120 mc   # SIGTERM: the JVM shutdown hook saves the world (tested)
 ```
 

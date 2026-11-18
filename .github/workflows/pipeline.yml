@@ -228,14 +228,17 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: scripts/publish.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO"
       - name: Sign (keyless, GitHub OIDC)
+        if: steps.publish.outputs.already_published != 'true'
         env:
           DIGEST: ${{ steps.publish.outputs.digest }}
         run: |
           [[ $DIGEST == sha256:* ]] || { echo "no published digest"; exit 1; }
           cosign sign --yes "$REGISTRY_REPO@$DIGEST"
       - name: Attest SBOMs and security gate report
+        if: steps.publish.outputs.already_published != 'true'
         run: scripts/attest.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO" "${{ steps.publish.outputs.digest }}"
       - name: Attest build provenance
+        if: steps.publish.outputs.already_published != 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ env.REGISTRY_REPO }}
@@ -262,7 +265,12 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           source build/java_${{ matrix.line.major }}/selected.env
-          ctyl metadata --report "build/$TAG/$SELECTED/gate.json" --inputs-digest "$INPUTS_DIGEST" \
+          if git fetch -q origin release-state 2>/dev/null && git show "FETCH_HEAD:state/$TAG.json" > previous.json 2>/dev/null; then
+            echo "previous state found for $TAG"
+          else
+            : > previous.json
+          fi
+          ctyl metadata --report "build/$TAG/$SELECTED/gate.json" --previous previous.json --inputs-digest "$INPUTS_DIGEST" \
             --default-candidate-inputs "${DEFAULT_CANDIDATE_INPUTS:-}" --revision "${{ github.sha }}" \
             --run-url "$RUN_URL" --digest "${{ steps.publish.outputs.digest }}" --tags "${{ steps.publish.outputs.tags }}" \
             --promoted="${{ steps.promote.outputs.promoted }}" --out "state/$TAG.json"
@@ -297,6 +305,8 @@ jobs:
         env:
           REASON: ${{ inputs.reason }}
         run: scripts/record-state.sh new-state "$REASON"
+      - name: Refresh the image status section of README.md on main
+        run: scripts/update-readme.sh "$REGISTRY_REPO"
 
   alert:
     name: alert on failure

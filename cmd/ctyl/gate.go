@@ -273,6 +273,7 @@ func cmdMetadata(args []string) error {
 	digest := fs.String("digest", "", "published index digest (must equal the gated digest)")
 	tags := fs.String("tags", "", "comma-separated immutable tags")
 	promoted := fs.Bool("promoted", false, "whether the floating tag now points at this digest")
+	previous := fs.String("previous", "", "the tag's previous state JSON; publication details are kept when the digest is unchanged")
 	out := fs.String("out", "", "output state JSON")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -317,6 +318,16 @@ func cmdMetadata(args []string) error {
 	s.CheckedAt = now.Format(time.RFC3339)
 	if s.PublishedAt != "" {
 		s.LatencyHours = latencyHours(s.UpstreamGADate, s.PublishedAt)
+	}
+	// Re-confirming an already published digest (daily rebuilds reproduce it)
+	// is not a new publication: keep when and by which run it was published.
+	if *previous != "" {
+		if data, err := os.ReadFile(*previous); err == nil {
+			var prev State
+			if json.Unmarshal(data, &prev) == nil && prev.Digest == s.Digest && prev.PublishedAt != "" {
+				s.BuiltAt, s.PublishedAt, s.LatencyHours, s.RunURL, s.Revision = prev.BuiltAt, prev.PublishedAt, prev.LatencyHours, prev.RunURL, prev.Revision
+			}
+		}
 	}
 	return writeJSON(*out, s)
 }
@@ -404,23 +415,52 @@ func cmdStatus(args []string) error {
 	c.register(fs)
 	stateDir := fs.String("state", "state", "directory of published state JSON files")
 	out := fs.String("out", "", "Markdown output (default stdout)")
+	readme := fs.String("readme", "", "rewrite the generated status section of this file in place")
+	image := fs.String("image", "", "image repository for copy-paste references, e.g. ghcr.io/owner/ctyl")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	files, _ := filepath.Glob(filepath.Join(*stateDir, "java_*.json"))
+	states, err := loadStates(*stateDir)
+	if err != nil {
+		return err
+	}
+	if *readme == "" {
+		return writeOut(*out, []byte(statusTable(states)))
+	}
+	p, err := policy.Load(filepath.Join(c.root, c.policyDir))
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(*readme)
+	if err != nil {
+		return err
+	}
+	updated, err := replaceSection(string(data), readmeStatus(p, states, *image))
+	if err != nil {
+		return fmt.Errorf("%s: %w", *readme, err)
+	}
+	return os.WriteFile(*readme, []byte(updated), 0o644)
+}
+
+func loadStates(dir string) ([]State, error) {
+	files, _ := filepath.Glob(filepath.Join(dir, "java_*.json"))
 	var states []State
 	for _, f := range files {
 		data, err := os.ReadFile(f)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		var s State
 		if err := json.Unmarshal(data, &s); err != nil {
-			return fmt.Errorf("%s: %w", f, err)
+			return nil, fmt.Errorf("%s: %w", f, err)
 		}
 		states = append(states, s)
 	}
 	sort.Slice(states, func(i, j int) bool { return states[i].Line < states[j].Line })
+	return states, nil
+}
+
+func statusTable(states []State) string {
 	var b strings.Builder
 	fmt.Fprintln(&b, "| tag | status | java | distribution | digest | upstream GA | published |")
 	fmt.Fprintln(&b, "|---|---|---|---|---|---|---|")
@@ -431,7 +471,84 @@ func cmdStatus(args []string) error {
 		}
 		fmt.Fprintf(&b, "| `%s` | %s | %s | %s %s | `%s` | %s | %s |\n", s.Tag, status, s.RuntimeVersion, s.Distribution, s.DistributionVersion, short(s.Digest), s.UpstreamGA, s.PublishedAt)
 	}
-	return writeOut(*out, []byte(b.String()))
+	return b.String()
+}
+
+const (
+	statusBegin = "<!-- ctyl:status:begin -->"
+	statusEnd   = "<!-- ctyl:status:end -->"
+)
+
+func replaceSection(doc, section string) (string, error) {
+	i, j := strings.Index(doc, statusBegin), strings.Index(doc, statusEnd)
+	if i < 0 || j < i {
+		return "", fmt.Errorf("markers %s / %s not found", statusBegin, statusEnd)
+	}
+	return doc[:i+len(statusBegin)] + "\n" + section + doc[j:], nil
+}
+
+var statusBadge = map[string]string{
+	evaluate.StatusVerified:    "✅ verified",
+	evaluate.StatusAwaiting:    "⏳ awaiting verification",
+	evaluate.StatusVulnerable:  "❌ vulnerable",
+	evaluate.StatusUnsupported: "⛔ unsupported",
+}
+
+func displayTime(ts string) string {
+	t, err := time.Parse(time.RFC3339, ts)
+	if err != nil {
+		return "—"
+	}
+	return t.UTC().Format("2006-01-02 15:04 UTC")
+}
+
+// readmeStatus renders the README section from the release state only, so
+// it changes exactly when the recorded state changes.
+func readmeStatus(p *policy.Policy, states []State, image string) string {
+	byTag := map[string]State{}
+	latest := ""
+	for _, s := range states {
+		byTag[s.Tag] = s
+		if s.PublishedAt > latest {
+			latest = s.PublishedAt
+		}
+	}
+	var b strings.Builder
+	stateLink := "`release-state` branch"
+	if repo, ok := strings.CutPrefix(image, "ghcr.io/"); ok {
+		stateLink = fmt.Sprintf("[`release-state`](https://github.com/%s/tree/release-state) branch", repo)
+	}
+	fmt.Fprintf(&b, "_Generated from the %s by the release pipeline. Last publication: %s._\n\n", stateLink, displayTime(latest))
+	fmt.Fprintln(&b, "| Image | Java | Status | Built | Published | Digest |")
+	fmt.Fprintln(&b, "|---|---|---|---|---|---|")
+	var pinned []string
+	for _, l := range p.Lines {
+		ref := fmt.Sprintf("%s:%s", image, l.Tag)
+		s, ok := byTag[l.Tag]
+		if !ok || s.Digest == "" {
+			fmt.Fprintf(&b, "| `%s` | %d | not published yet | — | — | — |\n", ref, l.Major)
+			continue
+		}
+		status := statusBadge[s.Status]
+		if status == "" {
+			status = s.Status
+		}
+		if !s.Promoted {
+			status += " (tag not moved)"
+		}
+		published := displayTime(s.PublishedAt)
+		if s.RunURL != "" {
+			published = fmt.Sprintf("[%s](%s)", published, s.RunURL)
+		}
+		java := strings.SplitN(s.RuntimeVersion, "+", 2)[0]
+		fmt.Fprintf(&b, "| `%s` | %s (%s %s) | %s | %s | %s | `%s` |\n", ref, java, s.Distribution, s.DistributionVersion,
+			status, displayTime(s.BuiltAt), published, short(s.Digest))
+		pinned = append(pinned, fmt.Sprintf("%s@%s", ref, s.Digest))
+	}
+	if len(pinned) > 0 {
+		fmt.Fprintf(&b, "\n<details><summary>Pinned references (exact digests)</summary>\n\n```\n%s\n```\n\n</details>\n", strings.Join(pinned, "\n"))
+	}
+	return b.String()
 }
 
 func short(d string) string {
