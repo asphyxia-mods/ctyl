@@ -1,16 +1,16 @@
 {
   "line": 8,
   "tag": "java_8",
-  "digest": "sha256:56cbf932ed4bd4619c4fda063ca554595241a64df7fe746004ffdab8cd161b48",
+  "digest": "sha256:a17f585ec66ad62b957c8dbca537c3fd4f20b74760879081f806e54a46515cfa",
   "immutable_tags": [
-    "java_8-wolfi-8.514-r0-56cbf932ed4b"
+    "java_8-wolfi-8.514-r0-a17f585ec66a"
   ],
   "distribution": "wolfi",
   "distribution_version": "8.514-r0",
   "runtime_version": "1.8.0_514",
   "source_commit": "4a152652d752aa0221cc5a5c3438a51a5160e870",
   "source_repo": "https://github.com/openjdk/jdk8u",
-  "inputs_digest": "sha256:6169b46fc020676e5846481831868918d532190a712590f8e0f5702bdd117b59",
+  "inputs_digest": "sha256:79266c4be67b9fe022c7a474cde5f5ecb55242f52a9c5824f87073abc0b3be0e",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
   "status": "verified",
   "promoted": true,
@@ -29,12 +29,12 @@
   "upstream_latest_ga": "jdk8u514-ga",
   "upstream_latest_ga_date": "2026-11-17T20:04:50Z",
   "behind_upstream": false,
-  "revision": "897c3a33fd31c9bb4f2eaac45d97105c4b10cfca",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44310251660",
-  "built_at": "2026-11-18T13:12:00Z",
-  "published_at": "2026-11-18T13:24:30Z",
-  "latency_hours": 17.3,
-  "checked_at": "2026-11-18T13:24:30Z",
+  "revision": "6699cfebc374c20395618b52d8c3690258189340",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44316923948",
+  "built_at": "2026-11-18T13:50:21Z",
+  "published_at": "2026-11-18T14:01:57Z",
+  "latency_hours": 18,
+  "checked_at": "2026-11-18T14:01:57Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
