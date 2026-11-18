@@ -1,0 +1,73 @@
+# Pull-request validation: unit tests, fuzzing, policy validation, and the
+# full build → image test → Minecraft smoke pipeline without publication.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main, release-state]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      lines: ${{ steps.lines.outputs.lines }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Format and vet
+        run: |
+          test -z "$(gofmt -l cmd internal tests)" || { gofmt -l cmd internal tests; exit 1; }
+          go vet ./...
+      - name: Unit tests (including real upstream fix-verification regression tests)
+        env:
+          CTYL_NETWORK_TESTS: "1"
+        run: go test -count=1 -race ./internal/... ./cmd/...
+      - name: Fuzz the startup parser
+        run: go test -run XXX -fuzz FuzzParse -fuzztime 90s ./internal/startup/
+      - name: Shell scripts and workflows
+        run: |
+          shellcheck -x scripts/*.sh tests/security/*.sh
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Policy validation and supported lines
+        id: lines
+        run: |
+          go run ./cmd/ctyl lines
+          echo "lines=$(go run ./cmd/ctyl lines | jq -c '[.[] | {major, prefer_fresh: false}]')" >> "$GITHUB_OUTPUT"
+
+  security-regression:
+    name: security gate regression (real artifacts)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          melange: "true"
+      - name: Vulnerable builds are rejected; verified vendor builds substitute a lagging Wolfi
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: tests/security/regression.sh
+
+  pipeline:
+    needs: unit
+    uses: ./.github/workflows/pipeline.yml
+    with:
+      lines: ${{ needs.unit.outputs.lines }}
+      publish: false
+      reason: ci
+    permissions:
+      contents: read
+      issues: write

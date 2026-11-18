@@ -1,0 +1,11 @@
+# Release gate policy.
+# Advisories at these severities block promotion of a floating tag unless the
+# candidate is verified fixed (or verified not affected).
+blocking_severities: [critical, high]
+# A candidate whose source does not contain the newest upstream GA tag is
+# "behind upstream". After this many hours the planner evaluates vendor
+# fallbacks; the gate reports it but does not block on it alone, because a
+# GA without a known blocking advisory is not proof of a vulnerability.
+upstream_lag_fallback_hours: 6
+# Detection-to-publication target used for latency alerts.
+publication_target_hours: 12

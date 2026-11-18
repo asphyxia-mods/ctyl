@@ -1,0 +1,8 @@
+/.tools/
+/build/
+/out/
+*.tar
+*.apk
+/packages/
+/.cache/
+melange.rsa*

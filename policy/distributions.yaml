@@ -1,0 +1,40 @@
+# Where JDK binaries may come from, in order of preference. Wolfi is the
+# default because it integrates with apko's signed, locked package resolution.
+# Vendor archives are a fallback used only when Wolfi's build fails the
+# security gate (or lags upstream) and the vendor build passes it.
+default: wolfi
+fallback_order: [corretto, temurin]
+
+distributions:
+  wolfi:
+    kind: wolfi
+    # {major} is substituted; Java 8 packages are named openjdk-8-*.
+    packages: ["openjdk-{major}-jre", "openjdk-{major}-default-jvm"]
+    # Repositories whose history contains the commit recorded in the JDK's
+    # `release` file (SOURCE=".:git:<commit>").
+    source_repos: ["{upstream_repo}"]
+
+  corretto:
+    kind: corretto
+    # Corretto's generic Linux archives are full JDKs; command-line tools other
+    # than java/keytool/jfr are removed when repackaging (modules are kept).
+    releases_api: https://api.github.com/repos/corretto/corretto-{major}/releases?per_page=10
+    archive_url: https://corretto.aws/downloads/resources/{version}/amazon-corretto-{version}-linux-{arch}.tar.gz
+    signature_url: https://corretto.aws/downloads/resources/{version}/amazon-corretto-{version}-linux-{arch}.tar.gz.sig
+    arch_names: {x86_64: x64, aarch64: aarch64}
+    signing_key: keys/corretto.asc
+    signing_fingerprint: 6DC3636DAE534049C8B94623A122542AB04F24E3
+    source_repos: ["https://github.com/corretto/corretto-{major}", "{upstream_repo}"]
+    license: GPL-2.0-with-classpath-exception
+
+  temurin:
+    kind: temurin
+    api: https://api.adoptium.net/v3/assets/latest/{major}/hotspot?os=linux&architecture={arch}&image_type=jre
+    arch_names: {x86_64: x64, aarch64: aarch64}
+    signing_key: keys/adoptium.asc
+    signing_fingerprint: 3B04D753C9050D9A5D343F39843C48A565F8F04B
+    source_repos: ["https://github.com/adoptium/jdk{major}u", "{upstream_repo}"]
+    license: GPL-2.0-with-classpath-exception
+
+# Oracle JDK/GraalVM binaries are not used: their licences restrict
+# redistribution in public images. See docs/java-distributions.md.

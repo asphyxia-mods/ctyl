@@ -1,0 +1,60 @@
+# Shared definition for every ctyl Java runtime image. Per-line configs are
+# rendered by `ctyl render` from policy/java-lines.yaml and include this file;
+# they add only the JDK packages and line-specific metadata.
+contents:
+  keyring:
+    - ./keys/wolfi-signing.rsa.pub
+    # Ephemeral per-build key for packages built by melange in this repository
+    # (the launcher and, when used, vendor JDK repackagings). See docs/build.md.
+    - ./build/packages/ctyl-local.rsa.pub
+  repositories:
+    - https://packages.wolfi.dev/os
+    - '@ctyl ./build/packages'
+  packages:
+    - wolfi-baselayout
+    - glibc
+    - glibc-locale-posix
+    - ca-certificates-bundle
+    - ctyl-launch@ctyl
+
+accounts:
+  groups:
+    - groupname: container
+      gid: 988
+  users:
+    - username: container
+      uid: 988
+      gid: 988
+      homedir: /home/container
+      shell: /sbin/nologin
+  run-as: "988:988"
+
+work-dir: /home/container
+
+paths:
+  - path: /home/container
+    type: directory
+    uid: 988
+    gid: 988
+    permissions: 0o755
+  - path: /tmp
+    type: directory
+    uid: 0
+    gid: 0
+    permissions: 0o1777
+
+entrypoint:
+  command: /usr/bin/ctyl-launch
+
+stop-signal: SIGTERM
+
+environment:
+  HOME: /home/container
+  USER: container
+  LANG: C.UTF-8
+  PATH: /usr/bin:/bin
+  JAVA_HOME: /usr/lib/jvm/default-jvm
+
+archs:
+  - x86_64
+  - aarch64

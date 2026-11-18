@@ -1,0 +1,55 @@
+package:
+  name: ctyl-launch
+  # Bump when launcher behaviour changes; the exact source is recorded via
+  # the build's git commit and the source digest in the image metadata.
+  version: "0.1.0"
+  epoch: 0
+  description: Shell-free, statically linked startup launcher for ctyl Minecraft runtimes
+  copyright:
+    - license: Apache-2.0
+  dependencies:
+    runtime: []
+  options:
+    no-depends: true
+
+environment:
+  contents:
+    repositories:
+      - https://packages.wolfi.dev/os
+    keyring:
+      - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+    packages:
+      - busybox
+      - go-1.27
+  environment:
+    CGO_ENABLED: "0"
+    GOFLAGS: -mod=readonly -trimpath -buildvcs=false
+    # The launcher uses only the Go standard library: building it must not
+    # need the network or the module cache.
+    GOPROXY: "off"
+    GOTOOLCHAIN: local
+
+pipeline:
+  - name: build
+    runs: |
+      go version
+      go build -ldflags "-s -w -buildid= -X main.version=${{package.version}}-r${{package.epoch}}" \
+        -o "${{targets.destdir}}/usr/bin/ctyl-launch" ./cmd/ctyl-launch
+  - name: unit tests
+    runs: |
+      go test -count=1 ./internal/startup/ ./internal/launch/
+
+test:
+  environment:
+    contents:
+      repositories:
+        - https://packages.wolfi.dev/os
+      keyring:
+        - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+      # The test sandbox needs a shell to run the steps; the runtime image does not.
+      packages:
+        - busybox
+  pipeline:
+    - runs: |
+        ctyl-launch --version
+        STARTUP='ctyl-launch --version' CTYL_QUIET=1 ctyl-launch

@@ -1,0 +1,109 @@
+# Java feature releases this project builds. A line is published only while
+# `security_support_until` is in the future; after that date its tag is marked
+# unsupported and no longer promoted (see docs/security-policy.md).
+#
+# Dates are the minimum public commitments of maintained OpenJDK update
+# projects (OpenJDK vulnerability group backports, Eclipse Temurin and Amazon
+# Corretto roadmaps). Extending a date requires a reviewed change citing a
+# current roadmap in `support_evidence`.
+lines:
+  - major: 8
+    tag: java_8
+    lts: true
+    security_support_until: 2030-12-31
+    support_evidence:
+      - https://adoptium.net/support/
+      - https://aws.amazon.com/corretto/faqs/
+    upstream_repo: https://github.com/openjdk/jdk8u
+    upstream_tag_pattern: '^jdk8u(\d+)-ga$'
+    java_home: /usr/lib/jvm/java-1.8-openjdk
+    # Unlike 11+, Wolfi's openjdk-8-jre does not depend on fontconfig or a
+    # font; headless text rendering (map/image plugins) then fails with an
+    # NPE in sun.awt.FontConfiguration. Found by tests/imagetest.
+    extra_packages: [libfontconfig1, ttf-dejavu]
+    disable_executables:
+      - /usr/lib/jvm/java-1.8-openjdk/bin/rmiregistry
+      - /usr/lib/jvm/java-1.8-openjdk/bin/rmid
+      - /usr/lib/jvm/java-1.8-openjdk/bin/orbd
+      - /usr/lib/jvm/java-1.8-openjdk/bin/tnameserv
+      - /usr/lib/jvm/java-1.8-openjdk/bin/servertool
+      - /usr/lib/jvm/java-1.8-openjdk/bin/jjs
+      - /usr/lib/jvm/java-1.8-openjdk/bin/policytool
+  - major: 11
+    tag: java_11
+    lts: true
+    security_support_until: 2027-10-31
+    support_evidence:
+      - https://adoptium.net/support/
+    upstream_repo: https://github.com/openjdk/jdk11u
+    upstream_tag_pattern: '^jdk-(11(?:\.\d+)*)-ga$'
+    java_home: /usr/lib/jvm/java-11-openjdk
+    disable_executables:
+      - /usr/lib/jvm/java-11-openjdk/bin/rmiregistry
+      - /usr/lib/jvm/java-11-openjdk/bin/rmid
+      - /usr/lib/jvm/java-11-openjdk/bin/jrunscript
+      - /usr/lib/jvm/java-11-openjdk/bin/jjs
+      - /usr/lib/jvm/java-11-openjdk/bin/jaotc
+  - major: 17
+    tag: java_17
+    lts: true
+    security_support_until: 2027-10-31
+    support_evidence:
+      - https://adoptium.net/support/
+    upstream_repo: https://github.com/openjdk/jdk17u
+    upstream_tag_pattern: '^jdk-(17(?:\.\d+)*)-ga$'
+    java_home: /usr/lib/jvm/java-17-openjdk
+    disable_executables:
+      - /usr/lib/jvm/java-17-openjdk/bin/rmiregistry
+      - /usr/lib/jvm/java-17-openjdk/bin/jrunscript
+  - major: 21
+    tag: java_21
+    lts: true
+    security_support_until: 2029-12-31
+    support_evidence:
+      - https://adoptium.net/support/
+    upstream_repo: https://github.com/openjdk/jdk21u
+    upstream_tag_pattern: '^jdk-(21(?:\.\d+)*)-ga$'
+    java_home: /usr/lib/jvm/java-21-openjdk
+    disable_executables:
+      - /usr/lib/jvm/java-21-openjdk/bin/rmiregistry
+      - /usr/lib/jvm/java-21-openjdk/bin/jrunscript
+      - /usr/lib/jvm/java-21-openjdk/bin/jwebserver
+  - major: 25
+    tag: java_25
+    lts: true
+    security_support_until: 2031-09-30
+    support_evidence:
+      - https://adoptium.net/support/
+    upstream_repo: https://github.com/openjdk/jdk25u
+    upstream_tag_pattern: '^jdk-(25(?:\.\d+)*)-ga$'
+    java_home: /usr/lib/jvm/java-25-openjdk
+    disable_executables:
+      - /usr/lib/jvm/java-25-openjdk/bin/rmiregistry
+      - /usr/lib/jvm/java-25-openjdk/bin/jrunscript
+      - /usr/lib/jvm/java-25-openjdk/bin/jwebserver
+  # Non-LTS: OpenJDK publishes two security updates (October, January) and
+  # stops when Java 28 ships in March 2027.
+  - major: 27
+    tag: java_27
+    lts: false
+    security_support_until: 2027-03-31
+    support_evidence:
+      - https://openjdk.org/projects/jdk/27/
+    upstream_repo: https://github.com/openjdk/jdk27u
+    upstream_tag_pattern: '^jdk-(27(?:\.\d+)*)-ga$'
+    java_home: /usr/lib/jvm/java-27-openjdk
+    disable_executables:
+      - /usr/lib/jvm/java-27-openjdk/bin/rmiregistry
+      - /usr/lib/jvm/java-27-openjdk/bin/jwebserver
+
+# Feature releases deliberately not built, with the reason shown to users.
+unsupported:
+  - major: 26
+    reason: non-LTS release superseded by Java 27 in September 2026; no further security updates
+  - major: 22
+    reason: non-LTS, end of life
+  - major: 23
+    reason: non-LTS, end of life
+  - major: 24
+    reason: non-LTS, end of life

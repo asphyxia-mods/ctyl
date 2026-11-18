@@ -1,0 +1,151 @@
+# Release discovery: hourly checks of Wolfi packages and upstream OpenJDK GA
+# tags, a daily full reconciliation, push-triggered rebuilds for image inputs,
+# manual emergency dispatch and an external webhook trigger.
+name: watch
+
+on:
+  schedule:
+    - cron: "17 * * * *"  # hourly: fresh Wolfi resolution + upstream GA tags
+    - cron: "43 4 * * *"  # daily: full rebuild, re-test and re-gate of every line
+  push:
+    branches: [main]
+    paths:
+      - images/**
+      - melange/**
+      - policy/**
+      - keys/**
+      - cmd/**
+      - internal/**
+      - scripts/**
+      - go.mod
+      - go.sum
+      - .github/workflows/pipeline.yml
+  workflow_dispatch:
+    inputs:
+      lines:
+        description: Java majors to consider, comma-separated (empty = all supported)
+        default: ""
+      force:
+        description: Rebuild even if inputs are unchanged
+        type: boolean
+        default: false
+      prefer_fresh:
+        description: Prefer vendor builds that contain the newest upstream GA (emergency)
+        type: boolean
+        default: false
+      reason:
+        description: Recorded with the release state
+        default: manual dispatch
+  # External trigger, e.g. a relay of vendor release webhooks:
+  #   gh api repos/OWNER/REPO/dispatches -f event_type=upstream-release -f client_payload[lines]=17
+  repository_dispatch:
+    types: [upstream-release]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      lines: ${{ steps.plan.outputs.lines }}
+      build: ${{ steps.plan.outputs.build }}
+      reason: ${{ steps.plan.outputs.reason }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Fetch published release state
+        run: |
+          if git fetch -q --depth 1 origin release-state; then
+            git worktree add -q state-branch FETCH_HEAD
+          else
+            mkdir -p state-branch/state
+          fi
+      - uses: ./.github/actions/setup
+      - name: Restore commit-graph cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/git
+          key: git-watch-${{ github.run_id }}
+          restore-keys: git-watch-
+      - name: Resolve fresh Wolfi package sets (no package cache)
+        run: |
+          go build -o .tools/bin/ctyl ./cmd/ctyl
+          mkdir -p locks
+          for tag_major in $(ctyl lines | jq -r '.[] | "\(.tag):\(.major)"'); do
+            tag=${tag_major%%:*} major=${tag_major##*:}
+            ctyl render --line "$major" --out "locks/$tag.apko.yaml"
+            ctyl render --line "$major" --resolution-only --out "locks/$tag.resolution.yaml"
+            apko lock "locks/$tag.resolution.yaml" --cache-dir "$(mktemp -d)" --output "locks/$tag.lock.json" \
+              2> "locks/$tag.lock.log" || cat "locks/$tag.lock.log"
+          done
+      - name: Plan
+        id: plan
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LINES: ${{ inputs.lines || github.event.client_payload.lines }}
+          SCHEDULE: ${{ github.event.schedule }}
+          FORCE: ${{ inputs.force }}
+          PREFER: ${{ inputs.prefer_fresh || false }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          force=false lines="$LINES"
+          [[ $lines =~ ^[0-9,\ ]*$ ]] || { echo "invalid lines input"; exit 1; }
+          if [[ $SCHEDULE == "43 4 * * *" || $FORCE == true ]]; then force=true; fi
+          ctyl plan --state state-branch/state --locks locks --registry "ghcr.io/${{ github.repository }}" \
+            --lines "$lines" --force="$force" > plan.json
+          cat plan.json
+          prefer=$PREFER
+          [[ $prefer == true ]] || prefer=false
+          {
+            echo "lines=$(jq -c --argjson p "$prefer" '[.build[] | {major, prefer_fresh: (.prefer_fresh or $p)}]' plan.json)"
+            echo "build=$(jq -r '(.build | length) > 0' plan.json)"
+            echo "reason=$EVENT: $(jq -r '[.build[] | "\(.tag): \(.reasons | join("; "))"] | join(" | ")' plan.json | cut -c1-900)"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "## Release plan"
+            jq -r '.build[] | "- **\(.tag)** \(if .prefer_fresh then "(prefer fresh upstream)" else "" end): \(.reasons | join("; "))"' plan.json
+            jq -r '"Unchanged: " + (.unchanged | join(", "))' plan.json
+            jq -r '.alerts[] | "> ⚠️ \(.)"' plan.json
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Raise or update the security alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          title="Security status alerts"
+          n=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number')
+          if [[ $(jq '.alerts | length' plan.json) -gt 0 ]]; then
+            body=$(jq -r '"Automated by the watch workflow.\n\n" + (.alerts | map("- " + .) | join("\n"))' plan.json)
+            if [[ -n $n ]]; then
+              [[ "$(gh issue view "$n" --json body --jq .body)" == "$body" ]] || gh issue edit "$n" --body "$body"
+            else
+              gh issue create --title "$title" --body "$body"
+            fi
+          elif [[ -n $n ]]; then
+            gh issue close "$n" --comment "All alerts cleared by run ${{ github.run_id }}."
+          fi
+
+  pipeline:
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
+    uses: ./.github/workflows/pipeline.yml
+    with:
+      lines: ${{ needs.plan.outputs.lines }}
+      publish: true
+      reason: ${{ needs.plan.outputs.reason }}
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+      issues: write

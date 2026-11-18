@@ -1,0 +1,275 @@
+# Reusable build → test → gate → (publish → sign → attest → promote) pipeline.
+# Called by ci.yml (no publication) and watch.yml / release dispatches.
+name: pipeline
+
+on:
+  workflow_call:
+    inputs:
+      lines:
+        description: 'JSON array of {"major": N, "prefer_fresh": bool}'
+        type: string
+        required: true
+      publish:
+        type: boolean
+        default: false
+      minecraft:
+        description: Run real Minecraft server smoke tests
+        type: boolean
+        default: true
+      reason:
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY_REPO: ghcr.io/${{ github.repository }}
+  CTYL_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+
+jobs:
+  build:
+    name: build java_${{ matrix.line.major }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        line: ${{ fromJSON(inputs.lines) }}
+    outputs:
+      # Matrix jobs cannot export per-entry outputs; each entry uploads a
+      # selected.env artifact instead.
+      done: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          melange: "true"
+      - name: Cache commit graphs used for fix verification
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/git
+          key: git-${{ matrix.line.major }}-${{ github.run_id }}
+          restore-keys: git-${{ matrix.line.major }}-
+      - name: Build, inspect and gate
+        id: build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MAJOR: ${{ matrix.line.major }}
+          PREFER_FRESH: ${{ matrix.line.prefer_fresh }}
+        run: |
+          set +e
+          args=()
+          [[ $PREFER_FRESH == true ]] && args+=(--prefer-fresh)
+          scripts/build-line.sh "$MAJOR" "${args[@]}"
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          exit $rc
+      - name: Vulnerability scan (fixable critical findings block)
+        if: steps.build.outcome == 'success'
+        run: |
+          source build/java_${{ matrix.line.major }}/selected.env
+          d=build/$TAG/$SELECTED
+          for sbom in "$d"/sbom/sbom-*.spdx.json; do
+            [[ $sbom == *index* ]] && continue
+            grype "sbom:$sbom" --only-fixed --fail-on critical -o table | tee -a "$d/grype.txt"
+          done
+      - name: Compile runtime probe
+        run: |
+          mkdir -p build/probe/classes
+          "$JAVA_HOME_17_X64/bin/javac" --release 8 -Xlint:-options -d build/probe/classes tests/probe/Probe.java
+          printf 'Main-Class: Probe\nPremain-Class: Probe\n' > build/probe/manifest.txt
+          "$JAVA_HOME_17_X64/bin/jar" cfm build/probe/probe.jar build/probe/manifest.txt -C build/probe/classes .
+      - name: Upload gate reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gate-java_${{ matrix.line.major }}
+          path: |
+            build/java_${{ matrix.line.major }}/selected.env
+            build/java_${{ matrix.line.major }}/*/gate.json
+          if-no-files-found: ignore
+      - name: Upload candidate
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: java_${{ matrix.line.major }}
+          path: |
+            build/java_${{ matrix.line.major }}
+            build/packages
+            build/probe/probe.jar
+          retention-days: 14
+          if-no-files-found: error
+
+  test:
+    name: test java_${{ matrix.line.major }} ${{ matrix.arch }}
+    needs: build
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        line: ${{ fromJSON(inputs.lines) }}
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: java_${{ matrix.line.major }}
+          path: build
+      - name: Load the gated image
+        id: load
+        run: |
+          source build/java_${{ matrix.line.major }}/selected.env
+          [[ -n $SELECTED ]] || { echo "no promotable candidate was built"; exit 1; }
+          docker load -i "$IMAGE"
+          echo "image=ctyl:$TAG-${{ matrix.arch }}" >> "$GITHUB_OUTPUT"
+          echo "runtime=$(jq -r '.architectures[0].runtime_version' "build/$TAG/$SELECTED/gate.json" | sed 's/[+-].*//')" >> "$GITHUB_OUTPUT"
+      - name: Image tests (Wings and Calagopus container settings)
+        env:
+          CTYL_TEST_IMAGE: ${{ steps.load.outputs.image }}
+          CTYL_PROBE_JAR: ${{ github.workspace }}/build/probe/probe.jar
+          CTYL_EXPECT_RUNTIME: ${{ steps.load.outputs.runtime }}
+        run: go test -count=1 -v ./tests/imagetest/
+      - name: Minecraft servers
+        if: inputs.minecraft
+        env:
+          CTYL_MC_TESTS: "1"
+          CTYL_IMAGE_PATTERN: ctyl:java_%d-${{ matrix.arch }}
+          CTYL_MC_SERVERS: ^java_${{ matrix.line.major }}/${{ matrix.arch == 'arm64' && '(vanilla|paper)' || '' }}
+          CTYL_MC_CACHE: ${{ runner.temp }}/minecraft
+          CTYL_MC_RESULTS: ${{ github.workspace }}/minecraft-results.jsonl
+        run: go test -count=1 -timeout 110m -v ./tests/minecraft/
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: results-java_${{ matrix.line.major }}-${{ matrix.arch }}
+          path: minecraft-results.jsonl
+          if-no-files-found: ignore
+
+  publish:
+    name: publish java_${{ matrix.line.major }}
+    if: inputs.publish
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    concurrency:
+      group: publish-java_${{ matrix.line.major }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        line: ${{ fromJSON(inputs.lines) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          melange: "true"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: java_${{ matrix.line.major }}
+          path: build
+      - name: Registry login (short-lived workflow token)
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Independent rebuild must reproduce the tested digest
+        id: publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: scripts/publish.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO" | tee publish.out
+      - name: Sign (keyless, GitHub OIDC)
+        run: cosign sign --yes "$REGISTRY_REPO@${{ steps.publish.outputs.digest }}"
+      - name: Attest SBOMs and security gate report
+        run: scripts/attest.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO" "${{ steps.publish.outputs.digest }}"
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY_REPO }}
+          subject-digest: ${{ steps.publish.outputs.digest }}
+          push-to-registry: true
+      - name: Verify signature and attestations before promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id="^${{ github.server_url }}/${{ github.repository }}/.github/workflows/"
+          cosign verify "$REGISTRY_REPO@${{ steps.publish.outputs.digest }}" \
+            --certificate-identity-regexp "$id" --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
+          cosign verify-attestation "$REGISTRY_REPO@${{ steps.publish.outputs.digest }}" --type "${{ github.server_url }}/${{ github.repository }}/attestations/security-gate/v1" \
+            --certificate-identity-regexp "$id" --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
+          gh attestation verify "oci://$REGISTRY_REPO@${{ steps.publish.outputs.digest }}" --repo "${{ github.repository }}"
+      - name: Promote floating tag
+        id: promote
+        run: scripts/promote.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO" "${{ steps.publish.outputs.digest }}"
+      - name: Record release state
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          source build/java_${{ matrix.line.major }}/selected.env
+          ctyl metadata --report "build/$TAG/$SELECTED/gate.json" --inputs-digest "$INPUTS_DIGEST" \
+            --default-candidate-inputs "${DEFAULT_CANDIDATE_INPUTS:-}" --revision "${{ github.sha }}" \
+            --run-url "$RUN_URL" --digest "${{ steps.publish.outputs.digest }}" --tags "${{ steps.publish.outputs.tags }}" \
+            --promoted="${{ steps.promote.outputs.promoted }}" --out "state/$TAG.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: state-java_${{ matrix.line.major }}
+          path: state/
+
+  record:
+    name: record release state
+    if: inputs.publish && always()
+    needs: [build, publish]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: release-state
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: state-*
+          path: new-state
+          merge-multiple: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: gate-*
+          path: new-state/gates
+      - uses: ./.github/actions/setup
+      - name: Commit to the release-state branch
+        env:
+          REASON: ${{ inputs.reason }}
+        run: scripts/record-state.sh new-state "$REASON"
+
+  alert:
+    name: alert on failure
+    if: failure()
+    needs: [build, test, publish, record]
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the pipeline-failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LINES: ${{ inputs.lines }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          title="Release pipeline failure"
+          body=$(printf 'Run: %s\nLines: %s\nReason: %s\n\nPublished tags were **not** changed by this run. Check the gate and test logs.' "$RUN_URL" "$LINES" "$REASON")
+          n=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number')
+          if [[ -n $n ]]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body" --label security-release || gh issue create --title "$title" --body "$body"; fi
