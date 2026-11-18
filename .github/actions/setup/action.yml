@@ -13,13 +13,13 @@ runs:
         path: .tools/dl
         key: tools-${{ runner.arch }}-${{ hashFiles('scripts/tool-versions.env') }}
     - name: Install tools
-      shell: bash
+      shell: bash -eo pipefail {0}
       run: |
         scripts/install-tools.sh
         echo "$GITHUB_WORKSPACE/.tools/bin" >> "$GITHUB_PATH"
     - name: Allow bubblewrap sandboxes
       if: inputs.melange == 'true'
-      shell: bash
+      shell: bash -eo pipefail {0}
       # Ubuntu 24.04 restricts unprivileged user namespaces, which melange's
       # bubblewrap runner needs. This affects only the ephemeral runner.
       run: |

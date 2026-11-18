@@ -7,6 +7,11 @@ on:
   push:
     branches-ignore: [main, release-state]
 
+# Explicit bash adds -o pipefail (the implicit default is only `bash -e`).
+defaults:
+  run:
+    shell: bash
+
 permissions:
   contents: read
 

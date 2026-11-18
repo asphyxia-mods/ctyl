@@ -20,6 +20,11 @@ on:
         type: string
         default: ""
 
+# Explicit bash adds -o pipefail (the implicit default is only `bash -e`).
+defaults:
+  run:
+    shell: bash
+
 permissions:
   contents: read
 
@@ -215,9 +220,13 @@ jobs:
         id: publish
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: scripts/publish.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO" | tee publish.out
+        run: scripts/publish.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO"
       - name: Sign (keyless, GitHub OIDC)
-        run: cosign sign --yes "$REGISTRY_REPO@${{ steps.publish.outputs.digest }}"
+        env:
+          DIGEST: ${{ steps.publish.outputs.digest }}
+        run: |
+          [[ $DIGEST == sha256:* ]] || { echo "no published digest"; exit 1; }
+          cosign sign --yes "$REGISTRY_REPO@$DIGEST"
       - name: Attest SBOMs and security gate report
         run: scripts/attest.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO" "${{ steps.publish.outputs.digest }}"
       - name: Attest build provenance

@@ -41,6 +41,11 @@ on:
   repository_dispatch:
     types: [upstream-release]
 
+# Explicit bash adds -o pipefail (the implicit default is only `bash -e`).
+defaults:
+  run:
+    shell: bash
+
 permissions:
   contents: read
 
