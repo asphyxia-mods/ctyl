@@ -307,7 +307,7 @@ jobs:
             : > previous.json
           fi
           ctyl metadata --report "build/$TAG/$SELECTED/gate.json" --previous previous.json --inputs-digest "$INPUTS_DIGEST" \
-            --default-candidate-inputs "${DEFAULT_CANDIDATE_INPUTS:-}" --revision "${{ github.sha }}" \
+            --default-candidate-inputs "${DEFAULT_CANDIDATE_INPUTS:-}" --revision "$REVISION" \
             --run-url "$RUN_URL" --digest "${{ steps.publish.outputs.digest }}" --tags "${{ steps.publish.outputs.tags }}" \
             --promoted="${{ steps.promote.outputs.promoted }}" --out "state/$TAG.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

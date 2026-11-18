@@ -54,8 +54,6 @@ retain their original publication details and rebuild reasons. Older state
 records have unknown release dates and unrecorded reasons until new evidence
 is recorded.
 
-
-
 ## Emergency security release
 
 1. If a fix is public but no advisory exists yet: add

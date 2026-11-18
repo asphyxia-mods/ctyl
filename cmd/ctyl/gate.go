@@ -330,10 +330,10 @@ func cmdMetadata(args []string) error {
 			var prev State
 			if json.Unmarshal(data, &prev) == nil {
 				s.RebuildReasons = rebuildReasons(prev, s)
-			}
-			if prev.Digest == s.Digest && prev.PublishedAt != "" {
-				s.RebuildReasons = prev.RebuildReasons
-				s.BuiltAt, s.PublishedAt, s.LatencyHours, s.RunURL, s.Revision = prev.BuiltAt, prev.PublishedAt, prev.LatencyHours, prev.RunURL, prev.Revision
+				if prev.Digest == s.Digest && prev.PublishedAt != "" {
+					s.RebuildReasons = prev.RebuildReasons
+					s.BuiltAt, s.PublishedAt, s.LatencyHours, s.RunURL, s.Revision = prev.BuiltAt, prev.PublishedAt, prev.LatencyHours, prev.RunURL, prev.Revision
+				}
 			}
 		}
 	}
