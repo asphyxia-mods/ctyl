@@ -53,12 +53,13 @@ log "rebuilding and publishing $repo:$immutable"
 apko publish "$CONFIG" "$repo:$immutable" --lockfile "$LOCK" --arch "$ARCHS" \
   --sbom-path "$d/publish-sbom" "${ann_args[@]}" --image-refs "$d/image-refs.txt" > "$d/publish.log" 2>&1 || {
   tail -30 "$d/publish.log" >&2; exit 1; }
-published=$(grep -o 'sha256:[0-9a-f]\{64\}' "$d/image-refs.txt" | head -1)
+# What the immutable tag now points at: the index (or, for a single
+# architecture, the platform manifest). --image-refs also lists every
+# platform manifest, so it is not used to pick the digest.
+published="sha256:$(skopeo inspect "${skopeo_tls[@]}" --raw "docker://$repo:$immutable" | sha256sum | cut -d' ' -f1)"
 if [[ $published != "$INDEX_DIGEST" ]]; then
-  echo "NOT REPRODUCIBLE: published $published but tested $INDEX_DIGEST; deleting nothing, refusing to sign or promote" >&2
+  echo "NOT REPRODUCIBLE: $repo:$immutable is $published but the tested image is $INDEX_DIGEST; refusing to sign or promote" >&2
   exit 1
 fi
-remote="sha256:$(skopeo inspect "${skopeo_tls[@]}" --raw "docker://$repo@$published" | sha256sum | cut -d' ' -f1)"
-[[ $remote == "$INDEX_DIGEST" ]] || { echo "registry returned $remote for $published" >&2; exit 1; }
 log "published $repo@$published (reproduced the tested digest)"
 { echo "digest=$published"; echo "tags=$immutable"; echo "already_published=false"; } >> "$out"

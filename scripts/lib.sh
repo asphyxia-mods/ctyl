@@ -7,11 +7,18 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$repo_root"
 export PATH="$repo_root/.tools/bin:$PATH"
 
-# Timestamps inside locally built packages come from the last commit, so
-# rebuilding the same commit is reproducible.
+# Paths whose content ends up in images. The revision annotation names the
+# last commit touching them, so commits that only change docs or advisories
+# rebuild to the identical digest instead of publishing a new image.
+image_input_paths=(go.mod cmd/ctyl-launch internal/startup internal/launch melange images keys
+  policy/java-lines.yaml policy/distributions.yaml)
+
+# Timestamps inside locally built packages and images come from the last
+# commit that changed image inputs, so rebuilding unchanged inputs (even at a
+# newer HEAD) is reproducible. Needs full history (CI: fetch-depth 0).
 if [[ -z ${SOURCE_DATE_EPOCH:-} ]]; then
-  SOURCE_DATE_EPOCH=$(git log -1 --format=%ct 2>/dev/null || echo 0)
-  [[ $SOURCE_DATE_EPOCH == 0 ]] && SOURCE_DATE_EPOCH=$(date -d 2026-01-01 +%s)
+  SOURCE_DATE_EPOCH=$(git log -1 --format=%ct -- "${image_input_paths[@]}" 2>/dev/null)
+  [[ -n $SOURCE_DATE_EPOCH ]] || SOURCE_DATE_EPOCH=$(date -d 2026-01-01 +%s)
 fi
 export SOURCE_DATE_EPOCH
 
@@ -63,12 +70,6 @@ melange_build() {
     --source-dir "$source_dir" \
     --runner "${MELANGE_RUNNER:-bubblewrap}"
 }
-
-# Paths whose content ends up in images. The revision annotation names the
-# last commit touching them, so commits that only change docs or advisories
-# rebuild to the identical digest instead of publishing a new image.
-image_input_paths=(go.mod cmd/ctyl-launch internal/startup internal/launch melange images keys
-  policy/java-lines.yaml policy/distributions.yaml)
 
 revision() {
   local rev
