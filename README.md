@@ -29,14 +29,14 @@ Copy an image name into your egg or server settings. Multi-arch:
 `linux/amd64` and `linux/arm64`.
 
 <!-- ctyl:status:begin -->
-_Generated from the [`release-state`](https://github.com/asphyxia-mods/ctyl/tree/release-state) branch by the release pipeline. Last publication: 2026-11-18 12:12 UTC._
+_Generated from the [`release-state`](https://github.com/asphyxia-mods/ctyl/tree/release-state) branch by the release pipeline. Last publication: 2026-11-18 13:03 UTC._
 
 | Image | Java | Status | Built | Published | Digest |
 |---|---|---|---|---|---|
 | `ghcr.io/asphyxia-mods/ctyl:java_8` | 1.8.0_514 (wolfi 8.514-r0) | ✅ verified | 2026-11-18 12:04 UTC | [2026-11-18 12:12 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44299717808) | `sha256:a8bbd60ffbb9` |
 | `ghcr.io/asphyxia-mods/ctyl:java_11` | 11.0.33.1 (wolfi 11.0.33.1-r0) | ✅ verified | 2026-11-18 11:45 UTC | [2026-11-18 11:58 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:11fc438dd32a` |
 | `ghcr.io/asphyxia-mods/ctyl:java_17` | 17.0.21.1 (wolfi 17.0.21.1-r0) | ✅ verified | 2026-11-18 11:45 UTC | [2026-11-18 11:56 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:684bc6a6a400` |
-| `ghcr.io/asphyxia-mods/ctyl:java_21` | 21.0.13.1 (wolfi 21.0.13.1-r0) | ✅ verified | 2026-11-18 11:45 UTC | [2026-11-18 11:57 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:7d013666d7dd` |
+| `ghcr.io/asphyxia-mods/ctyl:java_21` | 21.0.13.1 (wolfi 21.0.13.1-r0) | ✅ verified | 2026-11-18 12:52 UTC | [2026-11-18 13:03 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44307225078) | `sha256:0ed6ce91ca71` |
 | `ghcr.io/asphyxia-mods/ctyl:java_25` | 25.0.5.1 (wolfi 25.0.5.1-r0) | ✅ verified | 2026-11-18 11:44 UTC | [2026-11-18 11:57 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:71e262278046` |
 | `ghcr.io/asphyxia-mods/ctyl:java_27` | 27.0.1.1 (wolfi 27.0.1.1-r0) | ✅ verified | 2026-11-18 11:43 UTC | [2026-11-18 11:57 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618) | `sha256:793e47750ceb` |
 
@@ -46,7 +46,7 @@ _Generated from the [`release-state`](https://github.com/asphyxia-mods/ctyl/tree
 ghcr.io/asphyxia-mods/ctyl:java_8@sha256:a8bbd60ffbb905cd1d7be712df6d7c5153014be9c43fc51f472f8709ae4d4308
 ghcr.io/asphyxia-mods/ctyl:java_11@sha256:11fc438dd32a9a74208f21593a04f377dec53613db6a5e051dd9a6d891db0e94
 ghcr.io/asphyxia-mods/ctyl:java_17@sha256:684bc6a6a400c9ad4f1dc83b2490fdd214de5c293ce070f96640c3b15895c6d1
-ghcr.io/asphyxia-mods/ctyl:java_21@sha256:7d013666d7ddcd7a335d14b5456068ab991eb72c66571cf1319e44f26b8a2b7a
+ghcr.io/asphyxia-mods/ctyl:java_21@sha256:0ed6ce91ca714fc88b817d45016f2045f5d4d61ce4ca0adcb6c2c3bb0c012447
 ghcr.io/asphyxia-mods/ctyl:java_25@sha256:71e262278046ee3dfb766fb916321eab7f57acedf8458e1a2baa8ecec5759166
 ghcr.io/asphyxia-mods/ctyl:java_27@sha256:793e47750ceb7d01555499eceb31b3ec79a19975d2bff22f6749cb6ce8aed9ec
 ```
