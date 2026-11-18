@@ -1,9 +1,9 @@
 {
   "line": 25,
   "tag": "java_25",
-  "digest": "sha256:71e262278046ee3dfb766fb916321eab7f57acedf8458e1a2baa8ecec5759166",
+  "digest": "sha256:1bafe5ae87f2ebd94a3282369d2709d8c69fd67e436a385a4fa3efb4217dba23",
   "immutable_tags": [
-    "java_25-wolfi-25.0.5.1-r0-71e262278046"
+    "java_25-wolfi-25.0.5.1-r0-1bafe5ae87f2"
   ],
   "distribution": "wolfi",
   "distribution_version": "25.0.5.1-r0",
@@ -29,12 +29,12 @@
   "upstream_latest_ga": "jdk-25.0.5.1-ga",
   "upstream_latest_ga_date": "2026-11-16T00:54:57+01:00",
   "behind_upstream": false,
-  "revision": "0038c0b9f0ea036bd16fe46ff0f93ea76cd477fe",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44296703618",
-  "built_at": "2026-11-18T11:44:03Z",
-  "published_at": "2026-11-18T11:57:46Z",
-  "latency_hours": 60,
-  "checked_at": "2026-11-18T11:57:46Z",
+  "revision": "897c3a33fd31c9bb4f2eaac45d97105c4b10cfca",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44310251660",
+  "built_at": "2026-11-18T13:11:51Z",
+  "published_at": "2026-11-18T13:24:50Z",
+  "latency_hours": 61.5,
+  "checked_at": "2026-11-18T13:24:50Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
