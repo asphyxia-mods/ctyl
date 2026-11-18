@@ -229,6 +229,8 @@ type State struct {
 	Distribution           string             `json:"distribution"`
 	DistributionVersion    string             `json:"distribution_version"`
 	RuntimeVersion         string             `json:"runtime_version"`
+	JavaReleaseDate        string             `json:"java_release_date,omitempty"`
+	RebuildReasons         []string           `json:"rebuild_reasons,omitempty"`
 	SourceCommit           string             `json:"source_commit"`
 	SourceRepo             string             `json:"source_repo"`
 	InputsDigest           string             `json:"inputs_digest"`
@@ -303,6 +305,7 @@ func cmdMetadata(args []string) error {
 	if len(g.Reports) > 0 {
 		r := g.Reports[0]
 		s.DistributionVersion, s.RuntimeVersion, s.SourceCommit, s.SourceRepo, s.Findings = r.DistVersion, r.RuntimeVersion, r.SourceCommit, r.SourceRepo, r.Findings
+		s.JavaReleaseDate = r.JavaReleaseDate
 	}
 	for arch, pkgs := range g.Packages {
 		for _, p := range pkgs {
@@ -321,10 +324,15 @@ func cmdMetadata(args []string) error {
 	}
 	// Re-confirming an already published digest (daily rebuilds reproduce it)
 	// is not a new publication: keep when and by which run it was published.
+	s.RebuildReasons = rebuildReasons(State{}, s)
 	if *previous != "" {
 		if data, err := os.ReadFile(*previous); err == nil {
 			var prev State
-			if json.Unmarshal(data, &prev) == nil && prev.Digest == s.Digest && prev.PublishedAt != "" {
+			if json.Unmarshal(data, &prev) == nil {
+				s.RebuildReasons = rebuildReasons(prev, s)
+			}
+			if prev.Digest == s.Digest && prev.PublishedAt != "" {
+				s.RebuildReasons = prev.RebuildReasons
 				s.BuiltAt, s.PublishedAt, s.LatencyHours, s.RunURL, s.Revision = prev.BuiltAt, prev.PublishedAt, prev.LatencyHours, prev.RunURL, prev.Revision
 			}
 		}
@@ -519,14 +527,14 @@ func readmeStatus(p *policy.Policy, states []State, image string) string {
 		stateLink = fmt.Sprintf("[`release-state`](https://github.com/%s/tree/release-state) branch", repo)
 	}
 	fmt.Fprintf(&b, "_Generated from the %s by the release pipeline. Last publication: %s._\n\n", stateLink, displayTime(latest))
-	fmt.Fprintln(&b, "| Image | Java | Status | Built | Published | Digest |")
-	fmt.Fprintln(&b, "|---|---|---|---|---|---|")
+	fmt.Fprintln(&b, "| Image | Java (release date) | Status | Change since previous image | Container built | Image published | Digest |")
+	fmt.Fprintln(&b, "|---|---|---|---|---|---|---|")
 	var pinned []string
 	for _, l := range p.Lines {
 		ref := fmt.Sprintf("%s:%s", image, l.Tag)
 		s, ok := byTag[l.Tag]
 		if !ok || s.Digest == "" {
-			fmt.Fprintf(&b, "| `%s` | %d | not published yet | — | — | — |\n", ref, l.Major)
+			fmt.Fprintf(&b, "| `%s` | %d | not published yet | — | — | — | — |\n", ref, l.Major)
 			continue
 		}
 		status := statusBadge[s.Status]
@@ -541,10 +549,22 @@ func readmeStatus(p *policy.Policy, states []State, image string) string {
 			published = fmt.Sprintf("[%s](%s)", published, s.RunURL)
 		}
 		java := strings.SplitN(s.RuntimeVersion, "+", 2)[0]
-		fmt.Fprintf(&b, "| `%s` | %s (%s %s) | %s | %s | %s | `%s` |\n", ref, java, s.Distribution, s.DistributionVersion,
-			status, displayTime(s.BuiltAt), published, short(s.Digest))
+		releaseDate := "unknown"
+		if date, err := time.Parse("2006-01-02", s.JavaReleaseDate); err == nil {
+			releaseDate = date.Format("2006-01-02")
+		}
+		change := strings.Join(s.RebuildReasons, "; ")
+		if change == "" {
+			change = "not recorded"
+		}
+		if s.BehindUpstream {
+			java += "; behind upstream " + s.UpstreamGA
+		}
+		fmt.Fprintf(&b, "| `%s` | %s (%s %s)<br>%s | %s | %s | %s | %s | `%s` |\n", ref, java, s.Distribution, s.DistributionVersion, releaseDate,
+			status, change, displayTime(s.BuiltAt), published, short(s.Digest))
 		pinned = append(pinned, fmt.Sprintf("%s@%s", ref, s.Digest))
 	}
+	fmt.Fprintln(&b, "\nJava release date is JAVA_VERSION_DATE reported by the bundled runtime, not the Wolfi package or container publication date. Unknown dates and unrecorded changes are not inferred from build times. Changes compare published image inputs; a Wolfi package rebuild can keep the same Java source. Identical daily rebuilds keep the original container build and publication times.")
 	if len(pinned) > 0 {
 		fmt.Fprintf(&b, "\n<details><summary>Pinned references (exact digests)</summary>\n\n```\n%s\n```\n\n</details>\n", strings.Join(pinned, "\n"))
 	}

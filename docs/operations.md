@@ -39,6 +39,23 @@ uses keyless OIDC.
   closed automatically when clear) and **"Release pipeline failure"** (one
   comment per failed run).
 
+The README separates the runtime's `JAVA_VERSION_DATE`, container build time,
+and image publication time. The runtime date is the Java release date embedded
+by its distributor; it is not proof of when Wolfi published an APK. The state
+also retains `upstream_latest_ga_date` as the latest upstream GA tag date, which
+can refer to a release newer than the bundled runtime.
+
+`rebuild_reasons` compares the new image with its previous published state:
+Java version/source or distribution changes, Java package revisions, non-Java
+Wolfi package versions, and image/launcher sources. Multiple changes are listed
+together. Unclassified changes are labelled as other image inputs. These are
+observed changes, not guesses based on a workflow trigger. Identical digests
+retain their original publication details and rebuild reasons. Older state
+records have unknown release dates and unrecorded reasons until new evidence
+is recorded.
+
+
+
 ## Emergency security release
 
 1. If a fix is public but no advisory exists yet: add

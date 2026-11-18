@@ -57,26 +57,27 @@ type Finding struct {
 }
 
 type Report struct {
-	Line           int       `json:"line"`
-	Tag            string    `json:"tag"`
-	Arch           string    `json:"arch"`
-	Distribution   string    `json:"distribution"`
-	DistVersion    string    `json:"distribution_version"`
-	RuntimeVersion string    `json:"runtime_version"`
-	Implementor    string    `json:"implementor"`
-	SourceCommit   string    `json:"source_commit,omitempty"`
-	SourceRepo     string    `json:"source_repo,omitempty"`
-	SourceDirty    bool      `json:"source_dirty,omitempty"`
-	SupportUntil   string    `json:"security_support_until"`
-	Status         string    `json:"status"`
-	Promotable     bool      `json:"promotable"`
-	Reasons        []string  `json:"reasons,omitempty"`
-	Findings       []Finding `json:"findings"`
-	UpstreamGA     string    `json:"upstream_latest_ga,omitempty"`
-	BehindUpstream *bool     `json:"behind_upstream,omitempty"`
-	Warnings       []string  `json:"warnings,omitempty"`
-	PolicyDigest   string    `json:"policy_digest"`
-	EvaluatedAt    time.Time `json:"evaluated_at"`
+	Line            int       `json:"line"`
+	Tag             string    `json:"tag"`
+	Arch            string    `json:"arch"`
+	Distribution    string    `json:"distribution"`
+	DistVersion     string    `json:"distribution_version"`
+	RuntimeVersion  string    `json:"runtime_version"`
+	JavaReleaseDate string    `json:"java_release_date,omitempty"`
+	Implementor     string    `json:"implementor"`
+	SourceCommit    string    `json:"source_commit,omitempty"`
+	SourceRepo      string    `json:"source_repo,omitempty"`
+	SourceDirty     bool      `json:"source_dirty,omitempty"`
+	SupportUntil    string    `json:"security_support_until"`
+	Status          string    `json:"status"`
+	Promotable      bool      `json:"promotable"`
+	Reasons         []string  `json:"reasons,omitempty"`
+	Findings        []Finding `json:"findings"`
+	UpstreamGA      string    `json:"upstream_latest_ga,omitempty"`
+	BehindUpstream  *bool     `json:"behind_upstream,omitempty"`
+	Warnings        []string  `json:"warnings,omitempty"`
+	PolicyDigest    string    `json:"policy_digest"`
+	EvaluatedAt     time.Time `json:"evaluated_at"`
 }
 
 var sourceRE = regexp.MustCompile(`^\.:(?:git|hg):([0-9a-f]{7,40})(\+?)$`)
@@ -95,18 +96,19 @@ func SourceCommit(release map[string]string) (commit string, dirty bool, ok bool
 // Evaluate produces the gate report for one platform build.
 func Evaluate(p *policy.Policy, c Candidate, anc Ancestry, now time.Time) Report {
 	r := Report{
-		Line:           c.Line.Major,
-		Tag:            c.Line.Tag,
-		Arch:           c.Arch,
-		Distribution:   c.Distribution,
-		DistVersion:    c.DistVersion,
-		RuntimeVersion: firstNonEmpty(c.Release["JAVA_RUNTIME_VERSION"], c.Release["JAVA_VERSION"]),
-		Implementor:    strings.TrimSpace(c.Release["IMPLEMENTOR"] + " " + c.Release["IMPLEMENTOR_VERSION"]),
-		SupportUntil:   c.Line.SecuritySupportUntil.Format("2006-01-02"),
-		PolicyDigest:   p.Digest,
-		EvaluatedAt:    now.UTC(),
-		UpstreamGA:     c.UpstreamGA,
-		Findings:       []Finding{},
+		Line:            c.Line.Major,
+		Tag:             c.Line.Tag,
+		Arch:            c.Arch,
+		Distribution:    c.Distribution,
+		DistVersion:     c.DistVersion,
+		RuntimeVersion:  firstNonEmpty(c.Release["JAVA_RUNTIME_VERSION"], c.Release["JAVA_VERSION"]),
+		JavaReleaseDate: c.Release["JAVA_VERSION_DATE"],
+		Implementor:     strings.TrimSpace(c.Release["IMPLEMENTOR"] + " " + c.Release["IMPLEMENTOR_VERSION"]),
+		SupportUntil:    c.Line.SecuritySupportUntil.Format("2006-01-02"),
+		PolicyDigest:    p.Digest,
+		EvaluatedAt:     now.UTC(),
+		UpstreamGA:      c.UpstreamGA,
+		Findings:        []Finding{},
 	}
 	dist := p.Distributions[c.Distribution]
 
