@@ -51,10 +51,13 @@ ensure_local_key() {
 melange_build() {
   local recipe=$1 source_dir=$2 archs=$3
   ensure_local_key
+  # Packages are built unsigned so that nothing in them (or in the image's
+  # package database, which records their size) depends on the per-run key.
+  # Only the repository index is signed; apko verifies the index signature
+  # and each package's checksum against the index.
   melange build "$recipe" \
     --source-dir "$source_dir" \
     --arch "$archs" \
-    --signing-key build/packages/ctyl-local.rsa \
     --out-dir build/packages \
     --cache-dir .cache/melange \
     --build-date "$(date -u -d "@$SOURCE_DATE_EPOCH" +%Y-%m-%dT%H:%M:%SZ)" \
@@ -63,6 +66,11 @@ melange_build() {
     --git-commit "$(revision)" \
     --git-repo-url "${CTYL_SOURCE_URL:-https://github.com/asphyxia-mods/ctyl}" \
     --runner "${MELANGE_RUNNER:-bubblewrap}"
+  local arch
+  for arch in ${archs//,/ }; do
+    melange index --arch "$arch" --signing-key build/packages/ctyl-local.rsa \
+      -o "build/packages/$arch/APKINDEX.tar.gz" build/packages/"$arch"/*.apk >/dev/null 2>&1
+  done
   # `melange build` does not run the recipe's test block; run it against the
   # freshly built package from the local repository.
   melange test "$recipe" \

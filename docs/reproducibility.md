@@ -16,12 +16,15 @@ build, a match also proves that the published bytes are the tested bytes.
 ## Known nondeterministic or external inputs
 
 * **The local signing key** (`build/packages/ctyl-local.rsa`) is generated
-  per pipeline run and only signs this repository's packages for apko's
-  resolution. apko copies the public half into `/etc/apk/keys/`; the image
-  definition replaces that copy with an empty file (there is no `apk` tool
-  in the image), so the image does not depend on the key. Two builds with
-  different keys produce the same digest. The publish job also reuses the
-  build job's key, so the rebuilt launcher apk can be compared byte for byte.
+  per pipeline run. Locally built packages (the launcher and any vendor JDK
+  repackaging) are built **unsigned**; only their repository index is
+  signed. apko verifies the index signature, and the index pins each
+  package's control and data hashes, so integrity is unchanged. Nothing in
+  the image depends on the key: apko's copy of the public key in
+  `/etc/apk/keys/` is blanked (there is no `apk` tool), and two builds with
+  different keys produce byte-identical packages and the same image digest.
+* **melange and apko VCS stamping** is pinned: melange records, and apko
+  annotates, the last commit that changed image inputs, never `HEAD`.
 * **Package resolution is time-dependent by design.** A new lock is
   resolved hourly; reproducibility holds for a given lock.
 * **The Wolfi binaries** are reproduced from Wolfi's signed packages, not
