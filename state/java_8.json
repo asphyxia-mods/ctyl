@@ -1,16 +1,20 @@
 {
   "line": 8,
   "tag": "java_8",
-  "digest": "sha256:7c342391ccc9789feac66e8dfc4cbfa576859bc0dc5679d325aaab84aa1b4434",
+  "digest": "sha256:a1fe5d3a758625f8e290ea77839ecaafa8a31524a9c81ee27144a5f9af15c67e",
   "immutable_tags": [
-    "java_8-wolfi-8.514-r0-7c342391ccc9"
+    "java_8-wolfi-8.514-r0-a1fe5d3a7586"
   ],
   "distribution": "wolfi",
   "distribution_version": "8.514-r0",
   "runtime_version": "1.8.0_514",
+  "rebuild_reasons": [
+    "image/launcher sources updated",
+    "Java runtime/source unchanged"
+  ],
   "source_commit": "4a152652d752aa0221cc5a5c3438a51a5160e870",
   "source_repo": "https://github.com/openjdk/jdk8u",
-  "inputs_digest": "sha256:42085b0b8cdf01dd61decc9ec681a53cd5881fbb6e2c4114ab3cf3d339a690f2",
+  "inputs_digest": "sha256:9ccc9639dab799a8fe3886458c216a2cfc9ef5b057c77aec73bd999d054c59e8",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
   "status": "verified",
   "promoted": true,
@@ -29,12 +33,12 @@
   "upstream_latest_ga": "jdk8u514-ga",
   "upstream_latest_ga_date": "2026-11-17T20:04:50Z",
   "behind_upstream": false,
-  "revision": "cffd5500123f91b5ce52793b10b49638a7a77a68",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44380009998",
-  "built_at": "2026-11-18T19:43:51Z",
-  "published_at": "2026-11-18T19:57:53Z",
-  "latency_hours": 23.9,
-  "checked_at": "2026-11-18T19:57:53Z",
+  "revision": "356f2ac4549e52623e8e4aca7ca7f754bde1343a",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44385020890",
+  "built_at": "2026-11-18T20:04:21Z",
+  "published_at": "2026-11-18T20:14:56Z",
+  "latency_hours": 24.2,
+  "checked_at": "2026-11-18T20:14:56Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",

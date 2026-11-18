@@ -1,16 +1,21 @@
 {
   "line": 17,
   "tag": "java_17",
-  "digest": "sha256:dbf32ac55d5c21fd4e00ff60de7a55f8bbd4a8d57eeaa0de1769651e2fc62764",
+  "digest": "sha256:e8fa05df808ad87416b6f4068fdd42926e32c877e6274db306005e54c4049603",
   "immutable_tags": [
-    "java_17-wolfi-17.0.21.1-r1-dbf32ac55d5c"
+    "java_17-wolfi-17.0.21.1-r1-e8fa05df808a"
   ],
   "distribution": "wolfi",
   "distribution_version": "17.0.21.1-r1",
   "runtime_version": "17.0.21.1+0-wolfi-r1",
+  "java_release_date": "2026-11-17",
+  "rebuild_reasons": [
+    "image/launcher sources updated",
+    "Java runtime/source unchanged"
+  ],
   "source_commit": "10ebaa9a96d18973cfd08ec6828965886945f14f",
   "source_repo": "https://github.com/openjdk/jdk17u",
-  "inputs_digest": "sha256:46d195525e2d3c86d222d1c6e6e39d46188e660d08ec3024ad6515aed667e283",
+  "inputs_digest": "sha256:c9e6643744215ad33e0ac05a5f8ce480155ecae26a291bcfbf08397be95e23ff",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
   "status": "verified",
   "promoted": true,
@@ -29,12 +34,12 @@
   "upstream_latest_ga": "jdk-17.0.21.1-ga",
   "upstream_latest_ga_date": "2026-11-16T00:54:58+01:00",
   "behind_upstream": false,
-  "revision": "cffd5500123f91b5ce52793b10b49638a7a77a68",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44380009998",
-  "built_at": "2026-11-18T19:43:03Z",
-  "published_at": "2026-11-18T19:57:42Z",
-  "latency_hours": 68,
-  "checked_at": "2026-11-18T19:57:42Z",
+  "revision": "356f2ac4549e52623e8e4aca7ca7f754bde1343a",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44385020890",
+  "built_at": "2026-11-18T20:04:32Z",
+  "published_at": "2026-11-18T20:15:33Z",
+  "latency_hours": 68.3,
+  "checked_at": "2026-11-18T20:15:33Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",

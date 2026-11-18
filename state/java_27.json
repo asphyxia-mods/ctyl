@@ -1,16 +1,21 @@
 {
   "line": 27,
   "tag": "java_27",
-  "digest": "sha256:8799aadc7d2b9420ef6bd598a65facb83471b7890467feac10ebd6c173e8e146",
+  "digest": "sha256:30aecc1863da1d236676e0baaa258cce0d110a882a6fa045fb51c6c626dea687",
   "immutable_tags": [
-    "java_27-wolfi-27.0.1.1-r0-8799aadc7d2b"
+    "java_27-wolfi-27.0.1.1-r0-30aecc1863da"
   ],
   "distribution": "wolfi",
   "distribution_version": "27.0.1.1-r0",
   "runtime_version": "27.0.1.1+-wolfi-r0",
+  "java_release_date": "2026-11-17",
+  "rebuild_reasons": [
+    "image/launcher sources updated",
+    "Java runtime/source unchanged"
+  ],
   "source_commit": "03d8fb0da157ce832839b05c99f2c9f78de25cb8",
   "source_repo": "https://github.com/openjdk/jdk27u",
-  "inputs_digest": "sha256:61576183c338a95faaccc728f4b7945df5a16c24b5d4f39bb53c4908a4e40dd5",
+  "inputs_digest": "sha256:183aed77937e893146cef9689b762783eb5d8a814c86c19ae7f27a3fdb336333",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
   "status": "verified",
   "promoted": true,
@@ -29,12 +34,12 @@
   "upstream_latest_ga": "jdk-27.0.1.1-ga",
   "upstream_latest_ga_date": "2026-11-17T17:57:13Z",
   "behind_upstream": false,
-  "revision": "cffd5500123f91b5ce52793b10b49638a7a77a68",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44380009998",
-  "built_at": "2026-11-18T19:44:02Z",
-  "published_at": "2026-11-18T19:58:05Z",
-  "latency_hours": 26,
-  "checked_at": "2026-11-18T19:58:05Z",
+  "revision": "356f2ac4549e52623e8e4aca7ca7f754bde1343a",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44385020890",
+  "built_at": "2026-11-18T20:04:24Z",
+  "published_at": "2026-11-18T20:15:46Z",
+  "latency_hours": 26.3,
+  "checked_at": "2026-11-18T20:15:46Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
