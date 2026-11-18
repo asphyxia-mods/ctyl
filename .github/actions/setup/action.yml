@@ -16,6 +16,7 @@ runs:
       shell: bash -eo pipefail {0}
       run: |
         scripts/install-tools.sh
+        .tools/bin/go build -trimpath -o .tools/bin/ctyl ./cmd/ctyl
         echo "$GITHUB_WORKSPACE/.tools/bin" >> "$GITHUB_PATH"
     - name: Allow bubblewrap sandboxes
       if: inputs.melange == 'true'
