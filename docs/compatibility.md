@@ -15,6 +15,7 @@ in `pelican-eggs/minecraft` and the eggs bundled with Pterodactyl Panel
 | `$( [[ ! -f unix_args.txt ]] && printf %s "-jar {{SERVER_JARFILE}}" \|\| printf %s "@unix_args.txt" )` (Forge) | yes | evaluated without a shell |
 | `java $([[ -f user_jvm_args.txt ]] && printf %s "@user_jvm_args.txt") … $([[ ! -f unix_args.txt ]] && printf %s "-jar \`cat .serverjar\`" \|\| …)` (Forge Enhanced) | yes | nested `` `cat` `` inside `printf` |
 | `java … @unix_args.txt` (NeoForge) | yes | the egg symlinks `unix_args.txt` |
+| `java -Xms$(({{SERVER_MEMORY}}*80/100))M -Xmx$(({{SERVER_MEMORY}}*80/100))M …` (common panel customisation) | yes | integer `+ - * / %` only; values must be integers and are never evaluated as expressions |
 | `java -javaagent:log4jfix/Log4jPatcher-1.0.0.jar …` | yes | agents tested |
 | `java --add-opens … -p modules -m gomint.server/…` | yes | plain arguments |
 | startup strings that are shell programs: `;`, `&&` lists, pipes, redirects, `cd x && java`, `if`… | **no** | rejected with an explanation. None of the surveyed Minecraft Java eggs use them. |

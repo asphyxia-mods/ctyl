@@ -72,7 +72,50 @@ never approximated.
   rule and argument lists explicit.
 
 Unsupported expansions are errors: `${X:-default}`, `${#X}`, `$1`, `$@`, `$?`,
-`$((...))`, and `{{a b}}` or `{{server.x}}`.
+and `{{a b}}` or `{{server.x}}`.
+
+### Arithmetic
+
+`$((EXPR))` is evaluated by the launcher, so eggs can size the heap from the
+panel's memory limit:
+
+```
+java -Xms$(({{SERVER_MEMORY}}*80/100))M -Xmx$(({{SERVER_MEMORY}}*80/100))M -jar {{SERVER_JARFILE}}
+```
+
+`EXPR` may contain only:
+
+* decimal integer literals;
+* variables, written `{{NAME}}`, `${NAME}`, `$NAME` or bare `NAME`;
+* binary `+ - * / %` and unary `+ -`, with the usual precedence;
+* parentheses and whitespace.
+
+The rules differ from bash where bash would be unsafe or surprising:
+
+* **Values are never evaluated as expressions.** A variable must hold a
+  decimal integer (`-?[0-9]+`, no leading zeros), otherwise the template is
+  rejected. In bash, `$((X))` with `X='a[$(id)]'` runs `id`, and `X='2+3'`
+  is evaluated as an expression; here both are errors.
+* Unset variables are an error, as everywhere else. With
+  `CTYL_ALLOW_UNSET=1` they become empty strings, which are still not
+  integers, so the template is still rejected.
+* Literals with a leading zero (`010`, octal in bash), `0x`, and `base#n`
+  are rejected rather than read differently from bash.
+* Assignments (`=`, `+=`…), `++`, `--`, `**`, comparisons, bitwise and
+  logical operators, `?:`, `,`, array subscripts, quotes, `$(...)` and
+  nested `$((...))` are rejected.
+* Arithmetic uses 64-bit integers. Division and remainder truncate toward
+  zero, as in bash. Overflow and division by zero are errors instead of
+  wrapping or crashing.
+* Parentheses and unary operators can be nested at most 32 deep.
+
+The result is a decimal integer. It is never split or globbed, so it can be
+used anywhere in a word, in double quotes or in an assignment value.
+
+On Pterodactyl and Calagopus, `SERVER_MEMORY=0` means *unlimited*. The
+example above then yields `-Xmx0M` and the JVM refuses to start, exactly as
+it would under a shell. `-XX:MaxRAMPercentage=80` reads the container's
+memory limit instead and also works when memory is unlimited.
 
 ### Leading assignments
 

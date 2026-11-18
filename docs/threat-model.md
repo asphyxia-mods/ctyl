@@ -108,6 +108,10 @@ devices.*
   already upload a jar.
 * The compatibility idioms run no programs. `cat` is restricted to small
   regular files inside the working directory.
+* `$((...))` is evaluated by the launcher, not by a shell. Variable values in
+  it must be plain decimal integers and are never evaluated as expressions,
+  which closes bash's arithmetic injection (`X='a[$(id)]'`). Overflow and
+  division by zero are errors.
 
 ### Supply-chain attacks
 

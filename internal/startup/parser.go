@@ -39,6 +39,8 @@ type parser struct {
 	idiom  bool
 	tokens []token
 	depth  int
+
+	arithDepth int
 }
 
 func (p *parser) syntaxErr(off int, format string, args ...any) error {
@@ -392,7 +394,8 @@ func (p *parser) dollar(quoted bool) (exp expansion, literal bool, err error) {
 		p.pos++
 		return expansion{}, true, nil
 	case strings.HasPrefix(rest, "(("):
-		return exp, false, p.syntaxErr(start, "arithmetic expansion $((...)) is not supported")
+		v, err := p.arithmetic()
+		return expansion{pieces: []piece{{v, false}}}, false, err
 	case strings.HasPrefix(rest, "("):
 		body, err := p.substitutionBody()
 		if err != nil {
