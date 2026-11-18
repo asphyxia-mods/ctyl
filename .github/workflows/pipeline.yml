@@ -253,6 +253,9 @@ jobs:
           gh attestation verify "oci://$REGISTRY_REPO@${{ steps.publish.outputs.digest }}" --repo "${{ github.repository }}"
       - name: Promote floating tag
         id: promote
+        env:
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
         run: scripts/promote.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO" "${{ steps.publish.outputs.digest }}"
       - name: Record release state
         env:

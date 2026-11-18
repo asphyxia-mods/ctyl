@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"ctyl/internal/evaluate"
@@ -163,4 +164,18 @@ func planLine(c commonFlags, p *policy.Policy, l policy.Line, cache *gitcache.Ca
 		}
 	}
 	return e, alerts
+}
+
+func cmdRetag(args []string) error {
+	fs := flag.NewFlagSet("retag", flag.ContinueOnError)
+	repo := fs.String("repo", "", "repository, e.g. ghcr.io/owner/name")
+	digest := fs.String("digest", "", "existing manifest or index digest")
+	tag := fs.String("tag", "", "tag to point at the digest")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *repo == "" || !strings.HasPrefix(*digest, "sha256:") || *tag == "" {
+		return errors.New("--repo, --digest sha256:... and --tag are required")
+	}
+	return registry.Retag(*repo, *digest, *tag)
 }

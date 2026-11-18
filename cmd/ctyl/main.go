@@ -29,6 +29,7 @@ var commands = []command{
 	{"metadata", "produce build metadata and OCI annotations for a gated image", cmdMetadata},
 	{"mark", "record a gate rejection in a line's published state", cmdMark},
 	{"plan", "decide which lines need a rebuild", cmdPlan},
+	{"retag", "point a tag at an existing digest without rewriting the manifest", cmdRetag},
 	{"upstream", "report the newest upstream GA release of each line", cmdUpstream},
 	{"status", "render a status summary from gate reports", cmdStatus},
 }

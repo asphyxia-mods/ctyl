@@ -19,7 +19,10 @@ if [[ $current == "$digest" ]]; then
   echo "promoted=true" >> "$out"
   exit 0
 fi
-skopeo copy "${skopeo_tls[@]/--tls-verify/--src-tls-verify}" "${skopeo_tls[@]/--tls-verify/--dest-tls-verify}" --all --preserve-digests "docker://$repo@$digest" "docker://$repo:$TAG"
+# Re-upload the exact manifest bytes under the tag (a copy tool may convert
+# the manifest type, which would change the digest).
+ensure_ctyl
+ctyl retag --repo "$repo" --digest "$digest" --tag "$TAG"
 now=$(skopeo inspect "${skopeo_tls[@]}" --raw "docker://$repo:$TAG" | sha256sum | cut -d' ' -f1)
 [[ "sha256:$now" == "$digest" ]] || { echo "promotion verification failed: $repo:$TAG is sha256:$now" >&2; exit 1; }
 log "promoted $repo:$TAG -> $digest (previously $current)"
