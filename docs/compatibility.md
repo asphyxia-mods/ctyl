@@ -19,7 +19,7 @@ in `pelican-eggs/minecraft` and the eggs bundled with Pterodactyl Panel
 | `java -javaagent:log4jfix/Log4jPatcher-1.0.0.jar …` | yes | agents tested |
 | `java --add-opens … -p modules -m gomint.server/…` | yes | plain arguments |
 | startup strings that are shell programs: `;`, `&&` lists, pipes, redirects, `cd x && java`, `if`… | **no** | rejected with an explanation. None of the surveyed Minecraft Java eggs use them. |
-| eggs that start non-Java programs (e.g. `./bedrock_server`) | not the target | a binary in the server directory can be exec'd, but the image only ships Java's runtime libraries |
+| eggs that start non-Java programs (e.g. `./bedrock_server`) | not the target | a binary in the server directory can be exec'd, but the image only ships Java's runtime libraries plus OpenSSL 3 and libstdc++ for plugins' native code |
 
 ## Real server matrix
 
@@ -50,6 +50,11 @@ the restarts:
 | 25 | Fabric 26.3 + Fabric API | 14.2 | 10.1 | 694 | 0.2 ms | yes | yes |
 | 27 | Vanilla 26.3 | 9.9 | 7.0 | 1399 | 0.1 ms | yes | yes |
 | 27 | Paper 26.3 | 15.8 | 8.2 | 1325 | 0.2 ms | yes | yes |
+
+Proxies run separately (`TestVelocityGeyser`): Velocity 4.3.1 with the latest
+Geyser on Java 25 and 27, under the Calagopus settings. The test fails if
+Geyser's NetherNet cannot load its native WebRTC library. It passed on
+2026-11-18 (amd64).
 
 "First ready" includes world generation. RSS depends mostly on heap sizing
 (`MaxRAMPercentage=95` of a 1.5–3 GB limit) and is not a footprint

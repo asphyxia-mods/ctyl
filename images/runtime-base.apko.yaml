@@ -15,6 +15,14 @@ contents:
     - glibc
     - glibc-locale-posix
     - ca-certificates-bundle
+    # Libraries (no tools) that plugins' bundled native code links against,
+    # e.g. Geyser's NetherNet (libdatachannel-java.so needs libssl.so.3,
+    # libcrypto.so.3 and libstdc++.so.6). libgcc comes in with the JDK.
+    # libcrypto3 also pulls Wolfi's legacy provider module; it stays inactive
+    # unless CHAINGUARD_LEGACY_ALLOWED is set.
+    - libssl3
+    - libcrypto3
+    - libstdc++
     - ctyl-launch@ctyl
 
 accounts:

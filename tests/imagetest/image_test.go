@@ -129,7 +129,7 @@ func TestProbeUnderWingsProfiles(t *testing.T) {
 				Vars:    map[string]string{"PROBE_READONLY_ROOT": "1"}}, nil)
 			expectExit(t, c, 0, 3*time.Minute)
 			res := checkProbe(t, c.Output(), "identity", "capabilities", "pid1", "processes", "listeners", "readonly-root",
-				"headless-awt-fonts", "crypto", "process-spawn", "unicode-filenames", "tls", "tls-rejects-invalid-certificates", "timezone")
+				"headless-awt-fonts", "crypto", "process-spawn", "plugin-native-libs", "unicode-filenames", "tls", "tls-rejects-invalid-certificates", "timezone")
 			if want := os.Getenv("CTYL_EXPECT_RUNTIME"); want != "" && !strings.Contains(res["version"], want) {
 				t.Errorf("runtime %q, expected %q", res["version"], want)
 			}

@@ -57,11 +57,12 @@ If a real mod needs `jdk.attach`, the fix is a `-jdk` flavour of that line
 (Wolfi `openjdk-N` instead of `-jre`). That is a one-line distribution
 entry, not done preemptively.
 
-## What is in the image (Java 21, amd64, 48 packages; 41–49 across lines)
+## What is in the image (Java 21, amd64, 52 packages; 44–53 across lines)
 
 `wolfi-baselayout`, `glibc`, `glibc-locale-posix`, `ld-linux`, `libgcc`,
-`ca-certificates(-bundle)`, `java-cacerts` (+ `p11-kit`, `openssl` libcrypto
-and `libtasn1` pulled in by the CA tooling), `openjdk-21-jre`,
+`libstdc++`, OpenSSL 3 libraries (`libssl3`, `libcrypto3`),
+`ca-certificates(-bundle)`, `java-cacerts` (+ `p11-kit` and `libtasn1`
+pulled in by the CA tooling), `openjdk-21-jre`,
 `openjdk-21-default-jvm`, `java-common-jre`, font stack (`fontconfig`,
 `freetype`, `ttf-dejavu`, `libpng`, `brotli`, `bzip2`, `expat`), image
 libraries (`libjpeg-turbo`, `giflib`, `lcms2`), X11/ALSA client libraries
@@ -73,6 +74,16 @@ versions and checksums is in each image's SBOM and lock file.
   draws text and encodes a PNG on every line. That test is why `java_8`
   explicitly adds `libfontconfig1` and `ttf-dejavu`: Wolfi's 8u JRE does not
   depend on them.
+* **OpenSSL 3 and libstdc++** are for native code that plugins and mods
+  bundle, not for Java. Geyser's NetherNet transport extracts a WebRTC
+  library (libdatachannel) that links against `libssl.so.3`,
+  `libcrypto.so.3` and `libstdc++.so.6`; without them NetherNet does not
+  start. These packages contain only shared libraries and OpenSSL's config,
+  with no `openssl` executable. Wolfi's `libcrypto3` also pulls in the OpenSSL
+  legacy provider module, which stays inactive unless
+  `CHAINGUARD_LEGACY_ALLOWED` is set. The probe loads all of them on every
+  line, and `tests/minecraft` boots Velocity with Geyser and checks that
+  NetherNet loaded.
 * **X11 and ALSA client libraries** come from the dependencies of Wolfi's JRE
   package. They are never loaded in headless mode. Removing them would mean
   maintaining a repackaged JRE that lags Wolfi, which is worse for priority 3

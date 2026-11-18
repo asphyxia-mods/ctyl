@@ -206,6 +206,16 @@ public class Probe {
             require(p.waitFor() == 0, "child java failed");
             return "jspawnhelper ok";
         });
+        check("plugin-native-libs", () -> {
+            List<String> loaded = new ArrayList<>();
+            for (String soname : new String[] {"libcrypto.so.3", "libssl.so.3", "libstdc++.so.6", "libgcc_s.so.1"}) {
+                File lib = findSystemLibrary(soname);
+                require(lib != null, soname + " not found in /usr/lib or /lib");
+                System.load(lib.getCanonicalPath());
+                loaded.add(soname);
+            }
+            return String.join(" ", loaded);
+        });
         check("unsafe", () -> {
             Class<?> u = Class.forName("sun.misc.Unsafe");
             java.lang.reflect.Field f = u.getDeclaredField("theUnsafe");
@@ -265,6 +275,14 @@ public class Probe {
         }
         System.out.println("PROBE-SUMMARY failures=" + failures);
         System.exit(failures == 0 ? 0 : 1);
+    }
+
+    static File findSystemLibrary(String soname) {
+        for (String dir : new String[] {"/usr/lib", "/lib"}) {
+            File f = new File(dir, soname);
+            if (f.exists()) return f;
+        }
+        return null;
     }
 
     /** Retries transient network failures (not assertion failures). */

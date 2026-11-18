@@ -156,6 +156,45 @@ func paperJar(version string) (string, error) {
 	return download(d.URL, d.Name, "sha256", d.Checksums["sha256"])
 }
 
+func velocityJar(version string) (string, error) {
+	var build struct {
+		Downloads map[string]struct {
+			Name      string            `json:"name"`
+			URL       string            `json:"url"`
+			Checksums map[string]string `json:"checksums"`
+		} `json:"downloads"`
+	}
+	if err := getJSON(fmt.Sprintf("https://fill.papermc.io/v3/projects/velocity/versions/%s/builds/latest", version), &build); err != nil {
+		return "", err
+	}
+	d, ok := build.Downloads["server:default"]
+	if !ok {
+		return "", fmt.Errorf("velocity %s: no server download", version)
+	}
+	return download(d.URL, d.Name, "sha256", d.Checksums["sha256"])
+}
+
+func geyserJar(platform string) (string, error) {
+	const builds = "https://download.geysermc.org/v2/projects/geyser/versions"
+	var build struct {
+		Version   string `json:"version"`
+		Build     int    `json:"build"`
+		Downloads map[string]struct {
+			Name   string `json:"name"`
+			SHA256 string `json:"sha256"`
+		} `json:"downloads"`
+	}
+	if err := getJSON(builds+"/latest/builds/latest", &build); err != nil {
+		return "", err
+	}
+	d, ok := build.Downloads[platform]
+	if !ok {
+		return "", fmt.Errorf("geyser %s-%d: no %s download", build.Version, build.Build, platform)
+	}
+	u := fmt.Sprintf("%s/%s/builds/%d/downloads/%s", builds, build.Version, build.Build, platform)
+	return download(u, fmt.Sprintf("geyser-%s-%d-%s", build.Version, build.Build, d.Name), "sha256", d.SHA256)
+}
+
 func fabricLauncherJar(mc string) (string, error) {
 	var loaders, installers []struct {
 		Version string `json:"version"`
