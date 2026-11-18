@@ -60,6 +60,8 @@ melange_build() {
     --build-date "$(date -u -d "@$SOURCE_DATE_EPOCH" +%Y-%m-%dT%H:%M:%SZ)" \
     --namespace ctyl \
     --license Apache-2.0 \
+    --git-commit "$(revision)" \
+    --git-repo-url "${CTYL_SOURCE_URL:-https://github.com/asphyxia-mods/ctyl}" \
     --runner "${MELANGE_RUNNER:-bubblewrap}"
   # `melange build` does not run the recipe's test block; run it against the
   # freshly built package from the local repository.
