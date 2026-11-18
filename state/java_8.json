@@ -1,21 +1,23 @@
 {
   "line": 8,
   "tag": "java_8",
-  "digest": "sha256:a1fe5d3a758625f8e290ea77839ecaafa8a31524a9c81ee27144a5f9af15c67e",
+  "digest": "sha256:f749c5ad1e6ae40eaa81d93595b2783a02f06f8a01d45ed1002a65bc4a7901df",
   "immutable_tags": [
-    "java_8-wolfi-8.514-r0-a1fe5d3a7586"
+    "java_8-wolfi-8.514-r0-f749c5ad1e6a"
   ],
   "distribution": "wolfi",
   "distribution_version": "8.514-r0",
   "runtime_version": "1.8.0_514",
   "rebuild_reasons": [
+    "Wolfi dependencies updated",
     "image/launcher sources updated",
     "Java runtime/source unchanged"
   ],
   "source_commit": "4a152652d752aa0221cc5a5c3438a51a5160e870",
   "source_repo": "https://github.com/openjdk/jdk8u",
-  "inputs_digest": "sha256:9ccc9639dab799a8fe3886458c216a2cfc9ef5b057c77aec73bd999d054c59e8",
+  "inputs_digest": "sha256:2194d7c19a1405aea213afde3e8ea67129286b44ac62a28dfcdbd087b5c6d289",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
+  "gate_run_id": 44404442461,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -33,12 +35,12 @@
   "upstream_latest_ga": "jdk8u514-ga",
   "upstream_latest_ga_date": "2026-11-17T20:04:50Z",
   "behind_upstream": false,
-  "revision": "356f2ac4549e52623e8e4aca7ca7f754bde1343a",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44385020890",
-  "built_at": "2026-11-18T20:04:21Z",
-  "published_at": "2026-11-18T20:14:56Z",
-  "latency_hours": 24.2,
-  "checked_at": "2026-11-18T20:14:56Z",
+  "revision": "9b1176745c6145969644f3f93b0080a00b60ff48",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44404442461",
+  "built_at": "2026-11-18T21:48:58Z",
+  "published_at": "2026-11-18T22:01:12Z",
+  "latency_hours": 25.9,
+  "checked_at": "2026-11-18T22:01:12Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
@@ -75,7 +77,10 @@
       "libxtst6=1.2.6-r1",
       "openjdk-8-default-jvm=8.514-r0",
       "openjdk-8-jre=8.514-r0",
+      "openssl-3.6-libcrypto=3.6.5-r6",
+      "openssl-3.6-libssl=3.6.5-r6",
       "openssl-4.0-libcrypto=4.0.3-r8",
+      "openssl-4.0-libssl=4.0.3-r8",
       "openssl-provider-legacy-allowed=4.1.0-r0",
       "p11-kit=0.26.6-r0",
       "p11-kit-trust=0.26.6-r0",
@@ -118,7 +123,10 @@
       "libxtst6=1.2.6-r1",
       "openjdk-8-default-jvm=8.514-r0",
       "openjdk-8-jre=8.514-r0",
+      "openssl-3.6-libcrypto=3.6.5-r6",
+      "openssl-3.6-libssl=3.6.5-r6",
       "openssl-4.0-libcrypto=4.0.3-r8",
+      "openssl-4.0-libssl=4.0.3-r8",
       "openssl-provider-legacy-allowed=4.1.0-r0",
       "p11-kit=0.26.6-r0",
       "p11-kit-trust=0.26.6-r0",
