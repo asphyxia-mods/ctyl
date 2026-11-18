@@ -41,6 +41,7 @@ const (
 	KindSecurity     = "security"      // running digest was recorded as not verified
 	KindMaintenance  = "maintenance"   // userspace/package or launcher changes
 	KindUnknown      = "unknown"       // running digest unknown (no node access, mutable tag)
+	KindOtherNode    = "other-node"    // --node rollout, but the server's container is not on this node
 )
 
 type Item struct {
@@ -117,10 +118,14 @@ func Plan(opts Options) ([]Item, error) {
 			continue
 		}
 		it.Target = target
-		if it.CurrentDigest == "" {
-			if r, ok := running[s.UUID]; ok {
-				it.CurrentDigest = r.Digest(opts.Repo)
-			}
+		local, onThisNode := running[s.UUID]
+		if opts.Node != nil && !onThisNode {
+			it.Kind, it.Reason = KindOtherNode, "no container on this node; run the rollout on the node that hosts it"
+			items = append(items, it)
+			continue
+		}
+		if it.CurrentDigest == "" && onThisNode {
+			it.CurrentDigest = local.Digest(opts.Repo)
 		}
 		switch {
 		case it.CurrentDigest == "":
@@ -159,7 +164,7 @@ func javaVersion(runtime string) string {
 // Wanted reports whether a rollout should touch the item under opts.
 func (o Options) Wanted(it Item) bool {
 	switch it.Kind {
-	case KindCurrent, KindUnknown:
+	case KindCurrent, KindUnknown, KindOtherNode:
 		return false
 	case KindMaintenance:
 		return !o.OnlySecurity
@@ -200,6 +205,11 @@ func Apply(o Options, it Item) Result {
 	targetRef := fmt.Sprintf("%s:%s@%s", o.Repo, it.Tag, it.Target.Digest)
 
 	if o.Node != nil {
+		// Every later step verifies through this node's Docker daemon; a
+		// server hosted elsewhere must not be stopped or restarted from here.
+		if _, err := o.Node.ContainerDigest(it.Server.UUID, o.Repo); err != nil {
+			return done("skipped", "not on this node: %v (server untouched)", err)
+		}
 		o.logf("[%s] pulling %s", it.Server.Name, targetRef)
 		if err := o.Node.Pull(o.Repo, it.Tag, it.Target.Digest); err != nil {
 			return done("failed", "pre-pull: %v (server untouched)", err)

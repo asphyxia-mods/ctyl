@@ -84,7 +84,9 @@ following:
    `runtime_version`), `security` (the running digest was recorded as not
    verified, is unknown, or has no recorded Java version), `maintenance`
    (packages or launcher), or `current`.
-   `--only-security` skips maintenance updates.
+   `--only-security` skips maintenance updates. With `--node`, servers whose
+   container is not on this node are listed as `other-node` and left alone;
+   run the rollout on each node for its own servers.
 2. **Refuse** if the target's recorded status is not `verified` and promoted
    (override: `--allow-unverified` is deliberately not exposed on the CLI),
    if the release state disagrees with the registry, or, with

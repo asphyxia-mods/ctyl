@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -108,7 +109,13 @@ func (n *fakeNode) Pull(_, _, digest string) error {
 	}
 	return nil
 }
-func (n *fakeNode) ContainerDigest(uuid, _ string) (string, error) { return n.containers[uuid], nil }
+func (n *fakeNode) ContainerDigest(uuid, _ string) (string, error) {
+	d, ok := n.containers[uuid]
+	if !ok {
+		return "", fmt.Errorf("no container for server %s on this node", uuid)
+	}
+	return d, nil
+}
 
 func options(p *fakePanel, n *fakeNode) Options {
 	o := Options{
@@ -182,6 +189,32 @@ func TestPlanUsesNodeForMutableTags(t *testing.T) {
 	items, _ := Plan(options(p, &fakeNode{containers: map[string]string{"c": dOld}}))
 	if items[0].Kind != KindJavaSecurity || items[0].CurrentDigest != dOld {
 		t.Errorf("%+v", items[0])
+	}
+}
+
+func TestNodeRolloutLeavesServersOnOtherNodesAlone(t *testing.T) {
+	p := newFakePanel(
+		Server{ID: "a", UUID: "a", Name: "local", Image: repo + ":java_21@" + dOld},
+		Server{ID: "r", UUID: "r", Name: "remote", Image: repo + ":java_21@" + dOld},
+	)
+	n := &fakeNode{containers: map[string]string{"a": dOld}}
+	p.node = n
+	o := options(p, n)
+	items, _ := Plan(o)
+	kinds := map[string]string{}
+	for _, it := range items {
+		kinds[it.Server.Name] = it.Kind
+		if it.Server.Name == "remote" && o.Wanted(it) {
+			t.Error("remote server selected for a node rollout")
+		}
+	}
+	if kinds["local"] != KindJavaSecurity || kinds["remote"] != KindOtherNode {
+		t.Fatalf("kinds %v", kinds)
+	}
+
+	remote := Item{Server: p.servers[1], Tag: "java_21", Pinned: true, CurrentDigest: dOld, Target: o.Targets["java_21"], Kind: KindJavaSecurity}
+	if r := Apply(o, remote); r.Outcome != "skipped" || len(p.calls) != 0 {
+		t.Fatalf("%+v calls=%v", r, p.calls)
 	}
 }
 
@@ -293,7 +326,7 @@ func TestApplyStopsOnBackupOrPullFailureWithoutTouchingServer(t *testing.T) {
 		t.Fatalf("%+v %v", r, p.calls)
 	}
 	p2 := newFakePanel(Server{ID: "a", UUID: "a", Name: "s", Image: repo + ":java_21@" + dOld})
-	o2 := options(p2, &fakeNode{pullErr: errors.New("unauthorized"), containers: map[string]string{}})
+	o2 := options(p2, &fakeNode{pullErr: errors.New("unauthorized"), containers: map[string]string{"a": dOld}})
 	items, _ = Plan(o2)
 	if r := Apply(o2, items[0]); r.Outcome != "failed" || len(p2.calls) != 0 {
 		t.Fatalf("%+v %v", r, p2.calls)
