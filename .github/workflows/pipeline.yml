@@ -106,6 +106,9 @@ jobs:
   test:
     name: test java_${{ matrix.line.major }} ${{ matrix.arch }}
     needs: build
+    # Lines are independent: a failed build of one line must not skip the
+    # others. Each entry fails on its own if its line produced no candidate.
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     timeout-minutes: 120
     strategy:
@@ -145,6 +148,15 @@ jobs:
           CTYL_MC_CACHE: ${{ runner.temp }}/minecraft
           CTYL_MC_RESULTS: ${{ github.workspace }}/minecraft-results.jsonl
         run: go test -count=1 -timeout 110m -v ./tests/minecraft/
+      - name: Record that this line and architecture passed
+        run: |
+          mkdir -p passed
+          source build/java_${{ matrix.line.major }}/selected.env
+          echo "$INDEX_DIGEST" > "passed/java_${{ matrix.line.major }}-${{ matrix.arch }}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: passed-java_${{ matrix.line.major }}-${{ matrix.arch }}
+          path: passed/
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -155,7 +167,7 @@ jobs:
 
   publish:
     name: publish java_${{ matrix.line.major }}
-    if: inputs.publish
+    if: ${{ inputs.publish && !cancelled() }}
     needs: test
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -182,6 +194,21 @@ jobs:
         with:
           name: java_${{ matrix.line.major }}
           path: build
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: passed-java_${{ matrix.line.major }}-*
+          path: passed
+          merge-multiple: true
+      - name: Require passing tests on every architecture for this exact digest
+        env:
+          MAJOR: ${{ matrix.line.major }}
+        run: |
+          # shellcheck disable=SC1090
+          source "build/java_$MAJOR/selected.env"
+          for arch in amd64 arm64; do
+            marker="passed/java_$MAJOR-$arch"
+            [[ -f $marker && $(cat "$marker") == "$INDEX_DIGEST" ]] || { echo "java_$MAJOR: no passing $arch test result for $INDEX_DIGEST; not publishing"; exit 1; }
+          done
       - name: Registry login (short-lived workflow token)
         run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       - name: Independent rebuild must reproduce the tested digest

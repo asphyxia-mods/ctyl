@@ -16,12 +16,16 @@ if [[ $missing == 0 && -f $stamp && $(cat "$stamp") == "$sources $archs" ]]; the
 fi
 log "building ctyl-launch for $archs"
 # melange copies the source directory into its sandbox: give it exactly the
-# launcher's sources, not the repository (build outputs, caches).
-src=build/launcher-src
-rm -rf "$src" && mkdir -p "$src"
-cp go.mod go.sum "$src/"
-for f in "${files[@]}"; do
-  mkdir -p "$src/$(dirname "$f")" && cp "$f" "$src/$f"
+# launcher's sources, not the repository (build outputs, caches). Each
+# architecture builds sequentially from its own copy; a multi-arch melange run
+# over one shared source directory was observed to race in CI.
+for arch in ${archs//,/ }; do
+  src=build/launcher-src/$arch
+  rm -rf "$src" && mkdir -p "$src"
+  cp go.mod go.sum "$src/"
+  for f in "${files[@]}"; do
+    mkdir -p "$src/$(dirname "$f")" && cp "$f" "$src/$f"
+  done
+  melange_build melange/ctyl-launch.yaml "$src" "$arch"
 done
-melange_build melange/ctyl-launch.yaml "$src" "$archs"
 echo "$sources $archs" > "$stamp"
