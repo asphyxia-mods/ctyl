@@ -34,7 +34,7 @@
   "built_at": "2026-11-18T15:26:43Z",
   "published_at": "2026-11-18T15:38:13Z",
   "latency_hours": 63.7,
-  "checked_at": "2026-11-18T15:38:13Z",
+  "checked_at": "2026-11-18T16:12:05Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
