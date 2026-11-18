@@ -25,6 +25,7 @@ type HistoryRecord struct {
 	Digest     string `json:"digest"`
 	Status     string `json:"status"`
 	UpstreamGA string `json:"upstream_latest_ga"`
+	Runtime    string `json:"runtime_version"`
 }
 
 // NodeAPI is the node-side functionality (implemented by *Node).
@@ -128,13 +129,16 @@ func Plan(opts Options) ([]Item, error) {
 			it.Kind, it.Reason = KindCurrent, "running the current verified digest"
 		default:
 			prev, known := history[it.CurrentDigest]
+			prevJava, targetJava := javaVersion(prev.Runtime), javaVersion(target.Runtime)
 			switch {
-			case known && prev.UpstreamGA != target.UpstreamGA:
-				it.Kind, it.Reason = KindJavaSecurity, fmt.Sprintf("Java update %s -> %s", prev.UpstreamGA, target.UpstreamGA)
-			case known && prev.Status != "verified":
-				it.Kind, it.Reason = KindSecurity, "running digest was recorded as "+prev.Status
 			case !known:
 				it.Kind, it.Reason = KindSecurity, "running digest is not a recorded release; treat as outdated"
+			case prevJava == "" || targetJava == "":
+				it.Kind, it.Reason = KindSecurity, "Java version of the running or target digest is not recorded; treat as outdated"
+			case prevJava != targetJava:
+				it.Kind, it.Reason = KindJavaSecurity, fmt.Sprintf("Java update %s -> %s", prevJava, targetJava)
+			case prev.Status != "verified":
+				it.Kind, it.Reason = KindSecurity, "running digest was recorded as "+prev.Status
 			default:
 				it.Kind, it.Reason = KindMaintenance, "userspace or launcher update"
 			}
@@ -142,6 +146,14 @@ func Plan(opts Options) ([]Item, error) {
 		items = append(items, it)
 	}
 	return items, nil
+}
+
+// javaVersion is the OpenJDK version an image ships, without the build and
+// packaging suffix: "21.0.13.1+-wolfi-r0" -> "21.0.13.1". Images are compared
+// by what they contain, not by the upstream release known when they were built.
+func javaVersion(runtime string) string {
+	version, _, _ := strings.Cut(runtime, "+")
+	return version
 }
 
 // Wanted reports whether a rollout should touch the item under opts.
@@ -178,7 +190,8 @@ func Apply(o Options, it Item) Result {
 		o.logf("[%s] %s: %s", it.Server.Name, outcome, r.Detail)
 		return r
 	}
-	if o.Window != nil && !o.Window.Contains(o.Now()) {
+	outsideWindow := func() bool { return o.Window != nil && !o.Window.Contains(o.Now()) }
+	if outsideWindow() {
 		return done("skipped", "outside maintenance window %s", o.Window)
 	}
 	if !o.AllowUnverified && (it.Target.Status != "verified" || !it.Target.Promoted) {
@@ -197,6 +210,9 @@ func Apply(o Options, it Item) Result {
 		if err := o.Panel.Backup(it.Server.ID, "ctyl pre-update "+short(it.Target.Digest), 30*time.Minute); err != nil {
 			return done("failed", "backup: %v (server untouched)", err)
 		}
+	}
+	if outsideWindow() {
+		return done("skipped", "maintenance window %s closed during preparation (server untouched)", o.Window)
 	}
 	if err := o.stop(it.Server); err != nil {
 		return done("failed", "%v", err)
@@ -218,6 +234,9 @@ func Apply(o Options, it Item) Result {
 		rollback = it.Server.Image
 	}
 	if rollback == "" {
+		if serr := o.stop(it.Server); serr != nil {
+			return done("failed", "%v; no rollback image configured and stopping for inspection failed: %v", err, serr)
+		}
 		return done("failed", "%v; no rollback image configured, server left stopped for inspection", err)
 	}
 	o.logf("[%s] rolling back to %s after: %v", it.Server.Name, rollback, err)

@@ -86,9 +86,10 @@ func (p *fakePanel) Backup(id, name string, _ time.Duration) error {
 }
 
 type fakeNode struct {
-	containers map[string]string
-	tagged     string
-	pullErr    error
+	containers      map[string]string
+	tagged          string
+	pullErr         error
+	pullKeepsOldTag bool
 }
 
 func (n *fakeNode) Servers() ([]RunningServer, error) {
@@ -102,7 +103,9 @@ func (n *fakeNode) Pull(_, _, digest string) error {
 	if n.pullErr != nil {
 		return n.pullErr
 	}
-	n.tagged = digest
+	if !n.pullKeepsOldTag {
+		n.tagged = digest
+	}
 	return nil
 }
 func (n *fakeNode) ContainerDigest(uuid, _ string) (string, error) { return n.containers[uuid], nil }
@@ -110,8 +113,8 @@ func (n *fakeNode) ContainerDigest(uuid, _ string) (string, error) { return n.co
 func options(p *fakePanel, n *fakeNode) Options {
 	o := Options{
 		Panel: p, Repo: repo,
-		Targets:     map[string]Target{"java_21": {Tag: "java_21", Digest: dNew, Status: "verified", Promoted: true, UpstreamGA: "jdk-21.0.13.1-ga"}},
-		History:     []HistoryRecord{{Tag: "java_21", Digest: dOld, Status: "verified", UpstreamGA: "jdk-21.0.13-ga"}},
+		Targets:     map[string]Target{"java_21": {Tag: "java_21", Digest: dNew, Status: "verified", Promoted: true, UpstreamGA: "jdk-21.0.13.1-ga", Runtime: "21.0.13.1+-wolfi-r0"}},
+		History:     []HistoryRecord{{Tag: "java_21", Digest: dOld, Status: "verified", UpstreamGA: "jdk-21.0.13-ga", Runtime: "21.0.13+11-wolfi-r0"}},
 		StopTimeout: time.Second, ReadyTimeout: time.Second,
 		Now: time.Now,
 	}
@@ -153,6 +156,27 @@ func TestPlanClassifiesServers(t *testing.T) {
 	}
 }
 
+func TestPlanClassifiesByShippedJava(t *testing.T) {
+	tests := []struct {
+		name, prevGA, prevRuntime, want string
+	}{
+		{"lagging image built after the GA", "jdk-21.0.13.1-ga", "21.0.13+11-wolfi-r0", KindJavaSecurity},
+		{"same Java, new package revision", "jdk-21.0.13-ga", "21.0.13.1+-wolfi-r1", KindMaintenance},
+		{"Java version not recorded", "jdk-21.0.13.1-ga", "", KindSecurity},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newFakePanel(Server{ID: "a", UUID: "a", Name: "s", Image: repo + ":java_21@" + dOld})
+			o := options(p, nil)
+			o.History = []HistoryRecord{{Tag: "java_21", Digest: dOld, Status: "verified", UpstreamGA: tt.prevGA, Runtime: tt.prevRuntime}}
+			items, _ := Plan(o)
+			if items[0].Kind != tt.want {
+				t.Errorf("kind %q want %q (%s)", items[0].Kind, tt.want, items[0].Reason)
+			}
+		})
+	}
+}
+
 func TestPlanUsesNodeForMutableTags(t *testing.T) {
 	p := newFakePanel(Server{ID: "c", UUID: "c", Name: "tag", Image: repo + ":java_21"})
 	items, _ := Plan(options(p, &fakeNode{containers: map[string]string{"c": dOld}}))
@@ -186,6 +210,39 @@ func TestApplyTagModePrePullsAndVerifies(t *testing.T) {
 	r := Apply(o, items[0])
 	if r.Outcome != "updated" || n.tagged != dNew {
 		t.Fatalf("%+v tagged=%s", r, n.tagged)
+	}
+}
+
+func TestApplyWithoutRollbackStopsAServerOnTheWrongDigest(t *testing.T) {
+	p := newFakePanel(Server{ID: "c", UUID: "c", Name: "s", Image: repo + ":java_21"})
+	n := &fakeNode{containers: map[string]string{"c": dOld}, tagged: dOld, pullKeepsOldTag: true}
+	p.node = n
+	o := options(p, n)
+	items, _ := Plan(o)
+	r := Apply(o, items[0])
+	if r.Outcome != "failed" || !strings.Contains(r.Detail, "left stopped") || p.state["c"] != "offline" {
+		t.Fatalf("%+v state=%s", r, p.state["c"])
+	}
+	if want := "stop start stop"; strings.Join(p.calls, " ") != want {
+		t.Errorf("calls %q want %q", p.calls, want)
+	}
+}
+
+func TestApplyRechecksWindowBeforeStopping(t *testing.T) {
+	p := newFakePanel(Server{ID: "a", UUID: "a", Name: "s", Image: repo + ":java_21@" + dOld})
+	o := options(p, nil)
+	o.Backup = true
+	o.Window, _ = ParseWindow("04:00-06:00", time.UTC)
+	clock := []time.Time{time.Date(2026, 11, 18, 5, 59, 0, 0, time.UTC)}
+	o.Now = func() time.Time {
+		now := clock[0]
+		clock[0] = time.Date(2026, 11, 18, 6, 1, 0, 0, time.UTC)
+		return now
+	}
+	items, _ := Plan(o)
+	r := Apply(o, items[0])
+	if r.Outcome != "skipped" || strings.Join(p.calls, " ") != "backup" {
+		t.Fatalf("%+v calls=%v", r, p.calls)
 	}
 }
 

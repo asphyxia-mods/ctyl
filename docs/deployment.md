@@ -79,9 +79,11 @@ following:
 
 1. **Plan.** Compare the running digest (pinned reference, or the container
    on the node with `--node`) with the tag's current verified digest.
-   Classify the difference: `java-security` (newer OpenJDK update release),
-   `security` (the running digest was recorded as not verified, or is
-   unknown), `maintenance` (packages or launcher), or `current`.
+   Classify the difference: `java-security` (the target ships a different
+   OpenJDK version than the running image, by each image's recorded
+   `runtime_version`), `security` (the running digest was recorded as not
+   verified, is unknown, or has no recorded Java version), `maintenance`
+   (packages or launcher), or `current`.
    `--only-security` skips maintenance updates.
 2. **Refuse** if the target's recorded status is not `verified` and promoted
    (override: `--allow-unverified` is deliberately not exposed on the CLI),
@@ -90,18 +92,21 @@ following:
 3. **Pre-pull** `repo@digest` on the node and point the tag at it (`--node`).
 4. **Back up** through the panel (`--backup`, Pterodactyl). For Calagopus,
    use the panel's backup schedules.
-5. **Stop gracefully** with the panel's stop action, which runs the egg's
+5. **Recheck the window** (`--window`): if pulling or backing up ran past
+   its end, skip the server before any downtime.
+6. **Stop gracefully** with the panel's stop action, which runs the egg's
    stop command (`stop` for Minecraft), and wait for `offline`. If the server
    does not stop within `--stop-timeout`, the rollout aborts **without
    killing it**. A forced kill during a save is how worlds get corrupted.
-6. Switch the image if the server is pinned, then **start**, and wait for
+7. Switch the image if the server is pinned, then **start**, and wait for
    `running`. Both daemons set `running` only once the egg's "done" line has
    appeared.
-7. **Verify** that the new container's digest is the target (`--node`).
-8. On failure, **roll back**: stop gracefully, restore the previous image
+8. **Verify** that the new container's digest is the target (`--node`).
+9. On failure, **roll back**: stop gracefully, restore the previous image
    (pinned mode), or switch to `--rollback-image` (tag mode). Then start and
-   wait. Without a rollback image the server is left stopped for inspection
-   and the rollout halts.
+   wait. Without a rollback image the server is stopped gracefully (even if
+   it started and only the digest check failed) and left stopped for
+   inspection, and the rollout halts.
 
 The default is interactive approval. Unattended security deployments are an
 explicit choice:
