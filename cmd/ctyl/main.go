@@ -28,8 +28,12 @@ var commands = []command{
 	{"inputs-digest", "compute the content-input digest of a build", cmdInputsDigest},
 	{"metadata", "produce build metadata and OCI annotations for a gated image", cmdMetadata},
 	{"mark", "record a gate rejection in a line's published state", cmdMark},
+	{"accept-state", "check that a new state record may replace the recorded one", cmdAcceptState},
+	{"retire", "mark lines past their security support date unsupported in the release state", cmdRetire},
 	{"plan", "decide which lines need a rebuild", cmdPlan},
 	{"retag", "point a tag at an existing digest without rewriting the manifest", cmdRetag},
+	{"digest", "print the digest a tag points at (nothing if the tag does not exist)", cmdDigest},
+	{"policy-digest", "print the digest of a security policy directory", cmdPolicyDigest},
 	{"upstream", "report the newest upstream GA release of each line", cmdUpstream},
 	{"status", "render a status summary from gate reports", cmdStatus},
 }
@@ -41,6 +45,13 @@ type gateRejected struct{ msg string }
 
 func (e *gateRejected) Error() string { return e.msg }
 
+// exitStale means a record was not applied because newer state exists.
+const exitStale = 4
+
+type staleRecord struct{ msg string }
+
+func (e *staleRecord) Error() string { return e.msg }
+
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -50,10 +61,14 @@ func main() {
 		if c.name == os.Args[1] {
 			err := c.run(os.Args[2:])
 			var rej *gateRejected
+			var stale *staleRecord
 			switch {
 			case errors.As(err, &rej):
 				fmt.Fprintln(os.Stderr, "ctyl:", err)
 				os.Exit(exitNotPromotable)
+			case errors.As(err, &stale):
+				fmt.Fprintln(os.Stderr, "ctyl:", err)
+				os.Exit(exitStale)
 			case errors.Is(err, flag.ErrHelp):
 				os.Exit(2)
 			case err != nil:

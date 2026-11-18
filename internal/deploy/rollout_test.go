@@ -192,6 +192,39 @@ func TestPlanUsesNodeForMutableTags(t *testing.T) {
 	}
 }
 
+func TestPlanPrefersTheRunningContainerOverThePanelPin(t *testing.T) {
+	tests := []struct {
+		name, pin, running, want string
+	}{
+		{"pin moved ahead of a restart", dNew, dOld, KindJavaSecurity},
+		{"restart would revert to an old pin", dOld, dNew, KindJavaSecurity},
+		{"both current", dNew, dNew, KindCurrent},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newFakePanel(Server{ID: "a", UUID: "a", Name: "s", Image: repo + ":java_21@" + tt.pin})
+			o := options(p, &fakeNode{containers: map[string]string{"a": tt.running}})
+			items, _ := Plan(o)
+			if items[0].Kind != tt.want || !o.Wanted(items[0]) != (tt.want == KindCurrent) {
+				t.Errorf("kind %q want %q (%s)", items[0].Kind, tt.want, items[0].Reason)
+			}
+		})
+	}
+}
+
+func TestApplyRollsBackToTheRunningDigestWhenThePinWasMovedAhead(t *testing.T) {
+	p := newFakePanel(Server{ID: "a", UUID: "a", Name: "s", Image: repo + ":java_21@" + dNew})
+	p.crash = true
+	n := &fakeNode{containers: map[string]string{"a": dOld}}
+	p.node = n
+	o := options(p, n)
+	items, _ := Plan(o)
+	r := Apply(o, items[0])
+	if r.Outcome != "rolled-back" || p.images["a"] != repo+":java_21@"+dOld || n.containers["a"] != dOld {
+		t.Fatalf("%+v image=%s running=%s", r, p.images["a"], n.containers["a"])
+	}
+}
+
 func TestNodeRolloutLeavesServersOnOtherNodesAlone(t *testing.T) {
 	p := newFakePanel(
 		Server{ID: "a", UUID: "a", Name: "local", Image: repo + ":java_21@" + dOld},

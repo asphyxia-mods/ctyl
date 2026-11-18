@@ -324,6 +324,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      packages: read
     concurrency:
       group: release-state
       cancel-in-progress: false
@@ -339,10 +340,14 @@ jobs:
           pattern: gate-*
           path: new-state/gates
       - uses: ./.github/actions/setup
+      # Records are checked against the live floating tags, so a retry of
+      # this job cannot record a promotion that a newer run has replaced.
       - name: Commit to the release-state branch
         env:
           REASON: ${{ inputs.reason }}
-        run: scripts/record-state.sh new-state "$REASON"
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: scripts/record-state.sh new-state "$REGISTRY_REPO" "$REASON"
       - name: Refresh the image status section of README.md on main
         run: scripts/update-readme.sh "$REGISTRY_REPO"
 

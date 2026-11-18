@@ -63,6 +63,7 @@ jobs:
     outputs:
       lines: ${{ steps.plan.outputs.lines }}
       build: ${{ steps.plan.outputs.build }}
+      retire: ${{ steps.plan.outputs.retire }}
       reason: ${{ steps.plan.outputs.reason }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -114,6 +115,7 @@ jobs:
           {
             echo "lines=$(jq -c --argjson p "$prefer" '[.build[] | {major, prefer_fresh: (.prefer_fresh or $p)}]' plan.json)"
             echo "build=$(jq -r '(.build | length) > 0' plan.json)"
+            echo "retire=$(jq -r '(.retire | length) > 0' plan.json)"
             echo "reason=$EVENT: $(jq -r '[.build[] | "\(.tag): \(.reasons | join("; "))"] | join(" | ")' plan.json | cut -c1-900)"
           } >> "$GITHUB_OUTPUT"
           {
@@ -139,6 +141,30 @@ jobs:
           elif [[ -n $n ]]; then
             gh issue close "$n" --comment "All alerts cleared by run ${{ github.run_id }}."
           fi
+
+  # Lines past their support date are no longer built, so the pipeline never
+  # records their new status; persist it here.
+  retire:
+    needs: plan
+    if: needs.plan.outputs.retire == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: release-state
+      cancel-in-progress: false
+    env:
+      REGISTRY_REPO: ghcr.io/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Mark lines past their support date unsupported
+        run: |
+          mkdir -p no-new-state
+          scripts/record-state.sh no-new-state "$REGISTRY_REPO" "security support ended"
+      - name: Refresh the image status section of README.md on main
+        run: scripts/update-readme.sh "$REGISTRY_REPO"
 
   pipeline:
     needs: plan

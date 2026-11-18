@@ -32,7 +32,10 @@ type GateResult struct {
 	BehindUp     bool                          `json:"behind_upstream"`
 	Reports      []evaluate.Report             `json:"architectures"`
 	Packages     map[string][]ociimage.Package `json:"packages"`
-	EvaluatedAt  time.Time                     `json:"evaluated_at"`
+	// RunID is the CI run that evaluated the image. Re-runs keep their run's
+	// ID, so it orders releases where a re-run's fresh EvaluatedAt cannot.
+	RunID       int64     `json:"run_id"`
+	EvaluatedAt time.Time `json:"evaluated_at"`
 }
 
 var ociToApk = map[string]string{"amd64": "x86_64", "arm64": "aarch64"}
@@ -159,6 +162,7 @@ func cmdGate(args []string) error {
 	dist := fs.String("distribution", "", "distribution the image was built from")
 	out := fs.String("out", "", "write the JSON report here")
 	summary := fs.String("summary", "", "append a Markdown summary here (e.g. $GITHUB_STEP_SUMMARY)")
+	runID := fs.Int64("run-id", 0, "CI run evaluating the image (GITHUB_RUN_ID); orders releases for promotion")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -166,6 +170,7 @@ func cmdGate(args []string) error {
 	if err != nil {
 		return err
 	}
+	res.RunID = *runID
 	if *out != "" {
 		if err := writeJSON(*out, res); err != nil {
 			return err
@@ -236,6 +241,7 @@ type State struct {
 	InputsDigest           string             `json:"inputs_digest"`
 	DefaultCandidateInputs string             `json:"default_candidate_inputs,omitempty"`
 	PolicyDigest           string             `json:"policy_digest"`
+	GateRunID              int64              `json:"gate_run_id,omitempty"`
 	Status                 string             `json:"status"`
 	Promoted               bool               `json:"promoted"`
 	Reasons                []string           `json:"reasons,omitempty"`
@@ -296,7 +302,7 @@ func cmdMetadata(args []string) error {
 		return err
 	}
 	s := State{Line: g.Line, Tag: g.Tag, Digest: g.IndexDigest, ImmutableTags: splitList(*tags), Distribution: g.Distribution,
-		InputsDigest: *inputs, DefaultCandidateInputs: *defaultInputs, PolicyDigest: g.PolicyDigest, Status: g.Status,
+		InputsDigest: *inputs, DefaultCandidateInputs: *defaultInputs, PolicyDigest: g.PolicyDigest, GateRunID: g.RunID, Status: g.Status,
 		Promoted: *promoted, Reasons: g.Reasons, UpstreamGA: g.UpstreamGA, BehindUpstream: g.BehindUp,
 		Revision: *revision, RunURL: *runURL, BuiltAt: g.EvaluatedAt.Format(time.RFC3339), Packages: map[string][]string{}}
 	if *promoted || *digest != "" {
@@ -368,11 +374,14 @@ func cmdMark(args []string) error {
 	} else {
 		s = State{Line: g.Line, Tag: g.Tag, Packages: map[string][]string{}}
 	}
+	if s.GateRunID > g.RunID {
+		return &staleRecord{fmt.Sprintf("%s: recorded state comes from run %d, newer than this rejection from run %d", s.Tag, s.GateRunID, g.RunID)}
+	}
 	now, err := c.time()
 	if err != nil {
 		return err
 	}
-	s.Status, s.Reasons, s.PolicyDigest, s.CheckedAt = g.Status, g.Reasons, g.PolicyDigest, now.Format(time.RFC3339)
+	s.Status, s.Reasons, s.PolicyDigest, s.GateRunID, s.CheckedAt = g.Status, g.Reasons, g.PolicyDigest, g.RunID, now.Format(time.RFC3339)
 	s.UpstreamGA, s.BehindUpstream = g.UpstreamGA, g.BehindUp
 	if len(g.Reports) > 0 {
 		s.Findings = g.Reports[0].Findings

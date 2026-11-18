@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # Commits new state records to the release-state branch, appends latency
-# records and regenerates STATUS.md.
-# Usage: scripts/record-state.sh <dir-with-java_N.json> [reason]
+# records, marks lines past their support date unsupported and regenerates
+# STATUS.md.
+#
+# A record is skipped when the branch already holds a record from a newer run,
+# or when it says promoted but the registry tag points elsewhere (a retried
+# or re-run job must not roll the state back; deployments refuse a state that
+# disagrees with the registry).
+# Usage: scripts/record-state.sh <dir-with-java_N.json> <registry-repo> [reason]
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 new=${1:?directory}
-reason=${2:-}
+repo=${2:?registry repository, e.g. ghcr.io/owner/ctyl}
+reason=${3:-}
 ensure_ctyl
 work=$(mktemp -d)
 if git ls-remote --exit-code --heads origin release-state >/dev/null 2>&1; then
@@ -20,6 +27,13 @@ mkdir -p "$work/state"
 shopt -s nullglob
 for f in "$new"/java_*.json; do
   tag=$(basename "$f" .json)
+  rc=0
+  ctyl accept-state --record "$f" --current "$work/state/$tag.json" --registry "$repo" || rc=$?
+  case $rc in
+    0) ;;
+    4) log "$tag: keeping the recorded state"; continue ;;
+    *) exit "$rc" ;;
+  esac
   cp "$f" "$work/state/$tag.json"
   jq -c --arg reason "$reason" '{tag, digest, status, promoted, distribution, runtime_version, upstream_latest_ga,
       upstream_latest_ga_date, published_at, latency_hours, reason: $reason}' "$f" >> "$work/state/latency.jsonl"
@@ -30,8 +44,13 @@ for env_file in "$new"/gates/java_*/selected.env; do
   # shellcheck disable=SC1090
   (source "$env_file"; [[ -z ${SELECTED:-} ]] || exit 0
    gate=$(find "$(dirname "$env_file")" -mindepth 2 -maxdepth 2 -name gate.json | sort | head -1)
-   [[ -n $gate ]] && ctyl mark --report "$gate" --state "$work/state/$TAG.json")
+   [[ -n $gate ]] || exit 0
+   rc=0
+   ctyl mark --report "$gate" --state "$work/state/$TAG.json" || rc=$?
+   [[ $rc == 4 ]] && log "$TAG: keeping the recorded state"
+   [[ $rc == 0 || $rc == 4 ]])
 done
+ctyl retire --state "$work/state"
 ctyl status --state "$work/state" --out "$work/STATUS.md"
 cd "$work"
 git add -A

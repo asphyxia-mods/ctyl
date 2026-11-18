@@ -35,6 +35,13 @@ uses keyless OIDC.
 * After every recorded publication or status change, the pipeline
   regenerates the image table in `README.md` (between the
   `ctyl:status` markers) and commits it to `main` if it changed.
+* Re-running a run (or a failed job) is safe. Promotion orders releases by
+  GitHub run ID, which a re-run keeps. It refuses to move a floating tag to an
+  image from an older run than the current one, or to an image gated under a
+  policy other than the one on `main` now. The record job keeps a newer run's
+  state record. It also skips a record when the live tag points at a
+  different digest. A re-run executes its original commit's workflows and
+  scripts, so do not re-run runs started before these checks existed.
 * Alerts go to two issues: **"Security status alerts"** (updated in place,
   closed automatically when clear) and **"Release pipeline failure"** (one
   comment per failed run).
@@ -84,7 +91,9 @@ The planner raises an alert when an upstream GA is older than
 ## Retiring a line
 
 When `security_support_until` passes, the line stops being rebuilt and
-promoted, the planner alerts, and the status is `unsupported`. Announce it,
+promoted, and the planner alerts. The watch workflow then records the line as
+`unsupported` on the `release-state` branch and refreshes the README.
+`ctyl-deploy` refuses to roll servers onto it. Announce it,
 then move the line to `unsupported:` in `java-lines.yaml` with a reason. Do
 **not** retag it to another major version.
 

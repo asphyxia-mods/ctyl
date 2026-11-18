@@ -33,6 +33,8 @@ type Plan struct {
 	Alerts []string    `json:"alerts"`
 	// Unchanged lists lines whose published image is current.
 	Unchanged []string `json:"unchanged"`
+	// Retire lists tags past their support date still recorded as supported.
+	Retire []string `json:"retire"`
 }
 
 func cmdPlan(args []string) error {
@@ -65,14 +67,22 @@ func cmdPlan(args []string) error {
 	}
 
 	cache := gitcache.New(c.gitCache)
-	plan := Plan{Build: []PlanEntry{}, Alerts: []string{}, Unchanged: []string{}}
+	plan := Plan{Build: []PlanEntry{}, Alerts: []string{}, Unchanged: []string{}, Retire: []string{}}
+	due, err := retirementDue(p, *stateDir, now)
+	if err != nil {
+		return err
+	}
+	for _, l := range due {
+		if len(selected) == 0 || selected[l.Major] {
+			plan.Retire = append(plan.Retire, l.Tag)
+		}
+	}
 	for _, l := range p.Lines {
 		if len(selected) > 0 && !selected[l.Major] {
 			continue
 		}
 		if !l.Supported(now) {
-			plan.Alerts = append(plan.Alerts, fmt.Sprintf("%s: Java %d passed its security support date %s; the tag is no longer rebuilt and is marked unsupported",
-				l.Tag, l.Major, l.SecuritySupportUntil.Format("2006-01-02")))
+			plan.Alerts = append(plan.Alerts, fmt.Sprintf("%s: %s; the tag is no longer rebuilt and is marked unsupported", l.Tag, supportEndedReason(l)))
 			continue
 		}
 		if until := l.SecuritySupportUntil.Sub(now); until < 60*24*time.Hour {

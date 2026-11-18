@@ -65,8 +65,16 @@ gate_report_attested() {
   verified_gate_reports "$subject" | jq -se --slurpfile report "$report" 'any(. == $report[0])' >/dev/null
 }
 
-# Nanoseconds since the epoch, for comparing RFC 3339 timestamps.
-epoch_ns() { date -u -d "$1" +%s%N; }
+# Digest of the security policy on the default branch now. A re-run checks
+# out its original commit, whose policy may since have been superseded.
+# Chained so that a failure fails a $(...) caller, where errexit is off.
+active_policy_digest() {
+  local tree
+  tree=$(mktemp -d) &&
+    git fetch -q origin "${CTYL_POLICY_BRANCH:-main}" &&
+    git archive FETCH_HEAD policy | tar -x -C "$tree" &&
+    ctyl policy-digest --root "$tree"
+}
 
 log() { printf '\033[1m==> %s\033[0m\n' "$*" >&2; }
 

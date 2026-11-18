@@ -124,9 +124,11 @@ func Plan(opts Options) ([]Item, error) {
 			items = append(items, it)
 			continue
 		}
-		if it.CurrentDigest == "" && onThisNode {
-			it.CurrentDigest = local.Digest(opts.Repo)
+		running := ""
+		if onThisNode {
+			running = local.Digest(opts.Repo)
 		}
+		it.CurrentDigest = outdatedDigest(target.Digest, running, pinned)
 		switch {
 		case it.CurrentDigest == "":
 			it.Kind, it.Reason = KindUnknown, "running digest unknown (mutable tag; run on the node to inspect containers)"
@@ -151,6 +153,24 @@ func Plan(opts Options) ([]Item, error) {
 		items = append(items, it)
 	}
 	return items, nil
+}
+
+// outdatedDigest picks the digest to classify a server by: the first known
+// one that differs from target, so a server counts as current only if both
+// the container it runs and the panel pin it restarts into are the target.
+// A pin changed ahead of a restart must not hide an old running container.
+func outdatedDigest(target string, known ...string) string {
+	first := ""
+	for _, d := range known {
+		switch {
+		case d == "":
+		case d != target:
+			return d
+		case first == "":
+			first = d
+		}
+	}
+	return first
 }
 
 // javaVersion is the OpenJDK version an image ships, without the build and
@@ -241,7 +261,9 @@ func Apply(o Options, it Item) Result {
 
 	rollback := o.RollbackImage
 	if it.Pinned {
-		rollback = it.Server.Image
+		// The panel pin may already name the target (changed ahead of a
+		// restart); roll back to what the server actually ran.
+		rollback = fmt.Sprintf("%s:%s@%s", o.Repo, it.Tag, it.CurrentDigest)
 	}
 	if rollback == "" {
 		if serr := o.stop(it.Server); serr != nil {

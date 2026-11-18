@@ -92,7 +92,8 @@ for dist in $candidates; do
 
   log "[$tag] $dist: security gate"
   set +e
-  ctyl gate --image "$d/image.tar" --line "$major" --distribution "$dist" --out "$d/gate.json" --summary "$summary"
+  ctyl gate --image "$d/image.tar" --line "$major" --distribution "$dist" --out "$d/gate.json" --summary "$summary" \
+    --run-id "${GITHUB_RUN_ID:-0}"
   rc=$?
   set -e
   echo "$inputs" > "$d/inputs-digest"
