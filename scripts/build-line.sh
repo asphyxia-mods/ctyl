@@ -84,7 +84,7 @@ for dist in $candidates; do
   for a in "${annotations[@]}"; do ann_args+=(--annotations "$a"); done
 
   apko build "$d/apko.yaml" "ctyl:$tag" "$d/image.tar" \
-    --lockfile "$d/apko.lock.json" --arch "$archs" --sbom-path "$d/sbom" --sbom-formats spdx \
+    --lockfile "$d/apko.lock.json" --arch "$archs" --sbom-path "$d/sbom" --sbom-formats spdx --vcs=false \
     "${ann_args[@]}" 2> "$d/build.log" || { tail -30 "$d/build.log" >&2; exit 1; }
 
   log "[$tag] $dist: hygiene"

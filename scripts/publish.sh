@@ -50,7 +50,7 @@ ann_args=()
 while IFS= read -r a; do ann_args+=(--annotations "$a"); done < "$ANNOTATIONS"
 mkdir -p "$d/publish-sbom"
 log "rebuilding and publishing $repo:$immutable"
-apko publish "$CONFIG" "$repo:$immutable" --lockfile "$LOCK" --arch "$ARCHS" \
+apko publish "$CONFIG" "$repo:$immutable" --lockfile "$LOCK" --arch "$ARCHS" --vcs=false \
   --sbom-path "$d/publish-sbom" "${ann_args[@]}" --image-refs "$d/image-refs.txt" > "$d/publish.log" 2>&1 || {
   tail -30 "$d/publish.log" >&2; exit 1; }
 # What the immutable tag now points at: the index (or, for a single
