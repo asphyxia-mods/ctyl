@@ -37,6 +37,13 @@ paths:
     uid: 988
     gid: 988
     permissions: 0o755
+  # The per-run key that signs this repository's local packages is only
+  # needed while apko resolves them. There is no apk tool in the image, so
+  # the copy apko leaves in /etc/apk/keys is blanked: it would otherwise
+  # make every run's image differ.
+  - path: /etc/apk/keys/ctyl-local.rsa.pub
+    type: empty-file
+    permissions: 0o644
   - path: /tmp
     type: directory
     uid: 0

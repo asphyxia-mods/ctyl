@@ -16,19 +16,21 @@ build, a match also proves that the published bytes are the tested bytes.
 ## Known nondeterministic or external inputs
 
 * **The local signing key** (`build/packages/ctyl-local.rsa`) is generated
-  per pipeline run, and apko copies its public half into
-  `/etc/apk/keys/`. It travels with the build artifact so the publish job can
-  reproduce the image. A rebuild in a different run uses a new key, so it
-  yields a different digest even with identical packages. The key is inert
-  in the image: there is no `apk` tool.
+  per pipeline run and only signs this repository's packages for apko's
+  resolution. apko copies the public half into `/etc/apk/keys/`; the image
+  definition replaces that copy with an empty file (there is no `apk` tool
+  in the image), so the image does not depend on the key. Two builds with
+  different keys produce the same digest. The publish job also reuses the
+  build job's key, so the rebuilt launcher apk can be compared byte for byte.
 * **Package resolution is time-dependent by design.** A new lock is
   resolved hourly; reproducibility holds for a given lock.
 * **The Wolfi binaries** are reproduced from Wolfi's signed packages, not
   rebuilt from source. Their source provenance is the `SOURCE` commit check
   and Wolfi's own build attestations.
-* **Annotations.** `org.opencontainers.image.revision` is the last commit
-  that changed image inputs, not `HEAD`, so commits that touch only docs or
-  advisories rebuild to the same digest.
+* **Annotations and timestamps.** `org.opencontainers.image.revision` and
+  `SOURCE_DATE_EPOCH` come from the last commit that changed image inputs,
+  not `HEAD` (apko's own VCS stamping is disabled), so commits that touch
+  only docs, tooling or advisories rebuild to the same digest.
 
 ## Provenance and signatures (per published digest)
 
