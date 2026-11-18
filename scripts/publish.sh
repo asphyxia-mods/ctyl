@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Publishes a gated candidate. The image is rebuilt on this runner from the
 # same locked inputs (launcher and vendor packages are rebuilt with melange
-# too) and is pushed only if the rebuilt index digest equals the digest that
-# was tested and gated. This doubles as the reproducibility check.
+# too) and receives its release tag only if the rebuilt index digest equals
+# the digest that was tested and gated. This doubles as the reproducibility
+# check.
 #
 # Usage: scripts/publish.sh <selected.env> <registry-repo>
 # Writes digest=, tags=, already_published= to $GITHUB_OUTPUT when set.
@@ -49,17 +50,24 @@ fi
 ann_args=()
 while IFS= read -r a; do ann_args+=(--annotations "$a"); done < "$ANNOTATIONS"
 mkdir -p "$d/publish-sbom"
-log "rebuilding and publishing $repo:$immutable"
-apko publish "$CONFIG" "$repo:$immutable" --lockfile "$LOCK" --arch "$ARCHS" --vcs=false \
+# The rebuild goes to a per-line staging tag first; the immutable tag is only
+# assigned once the rebuild is known to be the tested image.
+staging="$TAG-staging"
+log "rebuilding and pushing $repo:$staging"
+apko publish "$CONFIG" "$repo:$staging" --lockfile "$LOCK" --arch "$ARCHS" --vcs=false \
   --sbom-path "$d/publish-sbom" "${ann_args[@]}" --image-refs "$d/image-refs.txt" > "$d/publish.log" 2>&1 || {
   tail -30 "$d/publish.log" >&2; exit 1; }
-# What the immutable tag now points at: the index (or, for a single
+# What the staging tag now points at: the index (or, for a single
 # architecture, the platform manifest). --image-refs also lists every
 # platform manifest, so it is not used to pick the digest.
-published="sha256:$(skopeo inspect "${skopeo_tls[@]}" --raw "docker://$repo:$immutable" | sha256sum | cut -d' ' -f1)"
-if [[ $published != "$INDEX_DIGEST" ]]; then
-  echo "NOT REPRODUCIBLE: $repo:$immutable is $published but the tested image is $INDEX_DIGEST; refusing to sign or promote" >&2
+rebuilt="sha256:$(skopeo inspect "${skopeo_tls[@]}" --raw "docker://$repo:$staging" | sha256sum | cut -d' ' -f1)"
+if [[ $rebuilt != "$INDEX_DIGEST" ]]; then
+  echo "NOT REPRODUCIBLE: the rebuild is $rebuilt but the tested image is $INDEX_DIGEST; $repo:$immutable not assigned, refusing to sign or promote" >&2
   exit 1
 fi
-log "published $repo@$published (reproduced the tested digest)"
+ensure_ctyl
+ctyl retag --repo "$repo" --digest "$INDEX_DIGEST" --tag "$immutable"
+published="sha256:$(skopeo inspect "${skopeo_tls[@]}" --raw "docker://$repo:$immutable" | sha256sum | cut -d' ' -f1)"
+[[ $published == "$INDEX_DIGEST" ]] || { echo "tagging failed: $repo:$immutable is $published, expected $INDEX_DIGEST" >&2; exit 1; }
+log "published $repo@$published as $immutable (reproduced the tested digest)"
 { echo "digest=$published"; echo "tags=$immutable"; echo "already_published=false"; } >> "$out"

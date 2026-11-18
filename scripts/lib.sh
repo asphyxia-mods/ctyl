@@ -24,16 +24,49 @@ export SOURCE_DATE_EPOCH
 
 # Local rehearsals against an http registry on localhost set
 # CTYL_INSECURE_REGISTRY=1; cosign then signs with CTYL_COSIGN_KEY instead of
-# keyless GitHub OIDC. Neither is used in CI.
+# keyless GitHub OIDC, and verifies with its public half
+# (CTYL_COSIGN_PUBLIC_KEY, default: the key path with .key replaced by .pub).
+# Neither is used in CI, where CTYL_SIGNER_IDENTITY names the release signer.
 skopeo_tls=()
-cosign_args=()
+cosign_registry_args=()
 if [[ ${CTYL_INSECURE_REGISTRY:-} == 1 ]]; then
   skopeo_tls=(--tls-verify=false)
-  cosign_args=(--allow-insecure-registry --allow-http-registry)
+  cosign_registry_args=(--allow-insecure-registry --allow-http-registry)
+fi
+cosign_args=("${cosign_registry_args[@]}")
+cosign_verify_args=()
+if [[ -n ${CTYL_SIGNER_IDENTITY:-} ]]; then
+  cosign_verify_args=("${cosign_registry_args[@]}" --certificate-identity-regexp "$CTYL_SIGNER_IDENTITY"
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com)
 fi
 if [[ -n ${CTYL_COSIGN_KEY:-} ]]; then
   cosign_args+=(--key "$CTYL_COSIGN_KEY" --signing-config "${CTYL_COSIGN_SIGNING_CONFIG:?offline signing config}")
+  [[ -n ${CTYL_SIGNER_IDENTITY:-} ]] || cosign_verify_args=("${cosign_registry_args[@]}"
+    --key "${CTYL_COSIGN_PUBLIC_KEY:-${CTYL_COSIGN_KEY%.key}.pub}" --insecure-ignore-tlog=true)
 fi
+gate_type="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-local/ctyl}/attestations/security-gate/v1"
+
+signer_configured() { [[ ${#cosign_verify_args[@]} -gt 0 ]]; }
+
+# Prints the predicate of every security-gate attestation on subject that
+# verifies for the release signer, one JSON document per line (none when the
+# subject carries no such attestation).
+verified_gate_reports() {
+  local subject=$1 out
+  signer_configured || { echo "no release signer configured (CTYL_SIGNER_IDENTITY or CTYL_COSIGN_KEY)" >&2; return 1; }
+  out=$(cosign verify-attestation "${cosign_verify_args[@]}" --type "$gate_type" "$subject" 2>/dev/null) || return 0
+  jq -c '.payload | @base64d | fromjson | .predicate' <<< "$out"
+}
+
+# Succeeds when subject carries a verified gate attestation whose report is
+# exactly the given gate.json (same policy, result and evaluation).
+gate_report_attested() {
+  local subject=$1 report=$2
+  verified_gate_reports "$subject" | jq -se --slurpfile report "$report" 'any(. == $report[0])' >/dev/null
+}
+
+# Nanoseconds since the epoch, for comparing RFC 3339 timestamps.
+epoch_ns() { date -u -d "$1" +%s%N; }
 
 log() { printf '\033[1m==> %s\033[0m\n' "$*" >&2; }
 

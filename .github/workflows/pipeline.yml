@@ -249,6 +249,8 @@ jobs:
         id: publish
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
         run: scripts/publish.sh "build/java_${{ matrix.line.major }}/selected.env" "$REGISTRY_REPO"
       # Signing and each attestation are checked independently rather than
       # skipped because the digest is already in the registry: a retry after
