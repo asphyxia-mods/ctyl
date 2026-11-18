@@ -1,12 +1,14 @@
 package startup
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 // evalIdiom evaluates the body of $(...) or `...`. Only a fixed set of
@@ -148,13 +150,20 @@ func (p *parser) resolve(path string) string {
 }
 
 // readFile implements `cat PATH`: a regular file below the working directory,
-// at most MaxFileBytes long.
+// at most MaxFileBytes long. The open is confined to the working directory
+// (symlinks cannot leave it) and never blocks, so a FIFO is rejected by the
+// regular-file check instead of stalling startup.
 func (p *parser) readFile(path string) (string, error) {
 	clean := filepath.Clean(path)
-	if path == "" || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, "../") {
+	if path == "" || !filepath.IsLocal(clean) {
 		return "", &ExpansionError{fmt.Sprintf("cat %q: only relative paths inside the working directory are allowed", path)}
 	}
-	f, err := os.Open(p.resolve(clean))
+	root, err := os.OpenRoot(cmp.Or(p.opts.Dir, "."))
+	if err != nil {
+		return "", &ExpansionError{fmt.Sprintf("cat %q: %v", path, err)}
+	}
+	defer root.Close()
+	f, err := root.OpenFile(clean, os.O_RDONLY|syscall.O_NONBLOCK, 0)
 	if err != nil {
 		return "", &ExpansionError{fmt.Sprintf("cat %q: %v", path, err)}
 	}

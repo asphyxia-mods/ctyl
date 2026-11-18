@@ -155,7 +155,9 @@ $(cat PATH)        `cat PATH`
   split and globbed like the output of an unquoted shell command
   substitution, so `printf %s "-jar {{SERVER_JARFILE}}"` yields two arguments.
 * `cat PATH` reads a regular file **inside the working directory** (no
-  absolute paths, no `..`), at most 64 KiB, without NUL bytes. Trailing
+  absolute paths, no `..`, no symlinks that lead outside it), at most 64 KiB,
+  without NUL bytes. FIFOs, devices and other non-regular files are rejected
+  without blocking. Trailing
   newlines are removed and the content is split on whitespace when unquoted.
   It is never globbed or re-parsed.
 * Nesting depth is limited to 2. All referenced variables must be set, even

@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 )
 
 func env(kv ...string) func(string) (string, bool) {
@@ -269,6 +271,47 @@ func TestRejected(t *testing.T) {
 				t.Errorf("error %q does not contain %q", err, tt.wantMsg)
 			}
 		})
+	}
+}
+
+func TestCatStaysInsideTheWorkingDirectory(t *testing.T) {
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "secret"), []byte("leaked"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dir := workdir(t, "real.txt")
+	if err := os.Symlink(filepath.Join(outside, "secret"), filepath.Join(dir, "escape")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("real.txt", filepath.Join(dir, "inside")); err != nil {
+		t.Fatal(err)
+	}
+	if err := syscall.Mkfifo(filepath.Join(dir, "pipe"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct{ file, wantMsg string }{
+		{"escape", "escapes"},
+		{"pipe", "not a regular file"},
+	} {
+		t.Run(tt.file, func(t *testing.T) {
+			done := make(chan error, 1)
+			go func() {
+				_, err := Parse("java `cat "+tt.file+"`", Options{Lookup: stdEnv, Dir: dir})
+				done <- err
+			}()
+			select {
+			case err := <-done:
+				var ee *ExpansionError
+				if !errors.As(err, &ee) || !strings.Contains(err.Error(), tt.wantMsg) {
+					t.Fatalf("want ExpansionError containing %q, got %T %v", tt.wantMsg, err, err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("cat blocked")
+			}
+		})
+	}
+	if _, err := Parse("java `cat inside`", Options{Lookup: stdEnv, Dir: dir}); err != nil {
+		t.Errorf("symlink inside the working directory: %v", err)
 	}
 }
 
