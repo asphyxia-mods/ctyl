@@ -232,28 +232,53 @@ public class Probe {
             });
         }
         if (network) {
-            check("dns", () -> InetAddress.getByName("sessionserver.mojang.com").getHostAddress());
-            check("tls", () -> {
+            check("dns", () -> withRetries(() -> InetAddress.getByName("sessionserver.mojang.com").getHostAddress()));
+            check("tls", () -> withRetries(() -> {
                 HttpsURLConnection c = (HttpsURLConnection) new URL("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").openConnection();
                 c.setConnectTimeout(15000);
                 c.setReadTimeout(15000);
                 int code = c.getResponseCode();
                 require(code == 200, "HTTP " + code);
                 return c.getCipherSuite();
-            });
+            }));
+            // Accepting the expired certificate fails the check; an SSL
+            // rejection passes; a network failure on every attempt (the test
+            // host is a third-party service) is reported as inconclusive.
             check("tls-rejects-invalid-certificates", () -> {
-                HttpURLConnection c = (HttpURLConnection) new URL("https://expired.badssl.com/").openConnection();
-                c.setConnectTimeout(15000);
-                try {
-                    c.getResponseCode();
-                } catch (SSLException expected) {
-                    return "rejected: " + expected.getClass().getSimpleName();
+                Exception last = null;
+                for (int attempt = 1; attempt <= 3; attempt++) {
+                    HttpURLConnection c = (HttpURLConnection) new URL("https://expired.badssl.com/").openConnection();
+                    c.setConnectTimeout(15000);
+                    c.setReadTimeout(15000);
+                    try {
+                        c.getResponseCode();
+                        throw new IllegalStateException("expired certificate accepted");
+                    } catch (SSLException expected) {
+                        return "rejected: " + expected.getClass().getSimpleName();
+                    } catch (java.io.IOException transientError) {
+                        last = transientError;
+                        Thread.sleep(2000L * attempt);
+                    }
                 }
-                throw new IllegalStateException("expired certificate accepted");
+                return "inconclusive (network: " + last + ")";
             });
         }
         System.out.println("PROBE-SUMMARY failures=" + failures);
         System.exit(failures == 0 ? 0 : 1);
+    }
+
+    /** Retries transient network failures (not assertion failures). */
+    static String withRetries(Check c) throws Exception {
+        java.io.IOException last = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                return c.run();
+            } catch (java.io.IOException e) {
+                last = e;
+                Thread.sleep(2000L * attempt);
+            }
+        }
+        throw last;
     }
 
     static void drain(InputStream in) throws Exception {
