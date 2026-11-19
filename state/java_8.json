@@ -1,9 +1,9 @@
 {
   "line": 8,
   "tag": "java_8",
-  "digest": "sha256:53c04054aa3e0c909302d2b24afea64e337031c3523202a05eca86d7104e5428",
+  "digest": "sha256:eae91177324d8a4ac67634bcc3aa9ab6781cacb383d5c044ea515f636c1118d5",
   "immutable_tags": [
-    "java_8-wolfi-8.514-r0-53c04054aa3e"
+    "java_8-wolfi-8.514-r0-eae91177324d"
   ],
   "distribution": "wolfi",
   "distribution_version": "8.514-r0",
@@ -14,9 +14,9 @@
   ],
   "source_commit": "4a152652d752aa0221cc5a5c3438a51a5160e870",
   "source_repo": "https://github.com/openjdk/jdk8u",
-  "inputs_digest": "sha256:a1480ed242132cfa038dbcc9822ae61b64131cd3a2e0e4adf58bd89b206e2ded",
+  "inputs_digest": "sha256:77d029b8fb2a5cd08e31058f2f9d5e17200bbbd2d891fe68defd14b3a29d021c",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 44504033260,
+  "gate_run_id": 44537871280,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -35,11 +35,11 @@
   "upstream_latest_ga_date": "2026-11-17T20:04:50Z",
   "behind_upstream": false,
   "revision": "9b1176745c6145969644f3f93b0080a00b60ff48",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44504033260",
-  "built_at": "2026-11-19T10:21:09Z",
-  "published_at": "2026-11-19T10:34:27Z",
-  "latency_hours": 38.5,
-  "checked_at": "2026-11-19T10:34:27Z",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/44537871280",
+  "built_at": "2026-11-19T13:57:50Z",
+  "published_at": "2026-11-19T14:07:32Z",
+  "latency_hours": 42,
+  "checked_at": "2026-11-19T14:07:32Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
@@ -62,7 +62,7 @@
       "libffi=3.8.1-r0",
       "libfontconfig1=2.18.4-r0",
       "libgcc=16.2.0-r5",
-      "libpng16-16=1.6.59-r2",
+      "libpng16-16=1.6.59-r3",
       "libstdc++=16.2.0-r5",
       "libtasn1=4.21.0-r10",
       "libx11-6=1.8.14-r5",
@@ -108,7 +108,7 @@
       "libffi=3.8.1-r0",
       "libfontconfig1=2.18.4-r0",
       "libgcc=16.2.0-r5",
-      "libpng16-16=1.6.59-r2",
+      "libpng16-16=1.6.59-r3",
       "libstdc++=16.2.0-r5",
       "libtasn1=4.21.0-r10",
       "libx11-6=1.8.14-r5",
