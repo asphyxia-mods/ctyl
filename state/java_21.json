@@ -17,7 +17,7 @@
   "source_repo": "https://github.com/openjdk/jdk21u",
   "inputs_digest": "sha256:76c149213f06742ca4929ab47577f7328cf5308e8ca80038b6d80feb649c4151",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 44745694712,
+  "gate_run_id": 44906603465,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -40,7 +40,7 @@
   "built_at": "2026-11-19T13:57:46Z",
   "published_at": "2026-11-19T14:08:23Z",
   "latency_hours": 86.2,
-  "checked_at": "2026-11-20T13:52:02Z",
+  "checked_at": "2026-11-21T13:16:13Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
