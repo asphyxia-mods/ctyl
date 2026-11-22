@@ -17,7 +17,7 @@
   "source_repo": "https://github.com/openjdk/jdk11u",
   "inputs_digest": "sha256:15c95eed05a3b82047fc99dcd58e8d407fdc95a7af5739050055a6e3dde25e3b",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 44906603465,
+  "gate_run_id": 45024426302,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -40,7 +40,7 @@
   "built_at": "2026-11-19T13:57:30Z",
   "published_at": "2026-11-19T14:07:23Z",
   "latency_hours": 41.8,
-  "checked_at": "2026-11-21T13:15:37Z",
+  "checked_at": "2026-11-22T13:07:54Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
