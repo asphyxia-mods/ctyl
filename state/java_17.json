@@ -1,9 +1,9 @@
 {
   "line": 17,
   "tag": "java_17",
-  "digest": "sha256:a7f4f013537b4f455b307c1e612a4c7d1e5b3971d9b65f3a42d712922b70cb15",
+  "digest": "sha256:2875cc7c186ec1d37cac58590913ba8f063ffab4690346b7e87bee8d2acddcfc",
   "immutable_tags": [
-    "java_17-wolfi-17.0.21.1-r1-a7f4f013537b"
+    "java_17-wolfi-17.0.21.1-r1-2875cc7c186e"
   ],
   "distribution": "wolfi",
   "distribution_version": "17.0.21.1-r1",
@@ -15,9 +15,9 @@
   ],
   "source_commit": "10ebaa9a96d18973cfd08ec6828965886945f14f",
   "source_repo": "https://github.com/openjdk/jdk17u",
-  "inputs_digest": "sha256:a09d76ce8fedfc5fcf1d68f95b7bdde4089deaea0a4faed4b5e631177b2dc64e",
+  "inputs_digest": "sha256:a748ce279222a3a5105627a5d876ca70763dcd4a7aff63fec50186402d338c93",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 45328489521,
+  "gate_run_id": 45423548654,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -36,11 +36,11 @@
   "upstream_latest_ga_date": "2026-11-16T00:54:58+01:00",
   "behind_upstream": false,
   "revision": "9b1176745c6145969644f3f93b0080a00b60ff48",
-  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/45328489521",
-  "built_at": "2026-11-24T04:49:31Z",
-  "published_at": "2026-11-24T05:01:07Z",
-  "latency_hours": 197.1,
-  "checked_at": "2026-11-24T05:01:07Z",
+  "run_url": "https://github.com/asphyxia-mods/ctyl/actions/runs/45423548654",
+  "built_at": "2026-11-24T15:20:44Z",
+  "published_at": "2026-11-24T15:34:40Z",
+  "latency_hours": 207.7,
+  "checked_at": "2026-11-24T15:34:40Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
@@ -60,7 +60,7 @@
       "libbrotlidec1=1.2.1-r4",
       "libbrotlienc1=1.2.1-r4",
       "libbz2-1=1.0.8-r31",
-      "libexpat1=2.10.0-r1",
+      "libexpat1=2.11.0-r0",
       "libffi=3.8.1-r0",
       "libfontconfig1=2.18.4-r0",
       "libgcc=16.2.0-r5",
@@ -115,7 +115,7 @@
       "libbrotlidec1=1.2.1-r4",
       "libbrotlienc1=1.2.1-r4",
       "libbz2-1=1.0.8-r31",
-      "libexpat1=2.10.0-r1",
+      "libexpat1=2.11.0-r0",
       "libffi=3.8.1-r0",
       "libfontconfig1=2.18.4-r0",
       "libgcc=16.2.0-r5",
