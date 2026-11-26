@@ -17,7 +17,7 @@
   "source_repo": "https://github.com/openjdk/jdk25u",
   "inputs_digest": "sha256:262087b35a90416085018bcc95065db6f81ccbe624a1ab6638b47dd5cee87f16",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 45819011191,
+  "gate_run_id": 45839033265,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -40,7 +40,7 @@
   "built_at": "2026-11-26T12:27:34Z",
   "published_at": "2026-11-26T12:40:47Z",
   "latency_hours": 252.8,
-  "checked_at": "2026-11-26T12:40:47Z",
+  "checked_at": "2026-11-26T14:41:17Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
