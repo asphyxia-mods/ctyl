@@ -29,28 +29,28 @@ Copy an image name into your egg or server settings. Multi-arch:
 `linux/amd64` and `linux/arm64`.
 
 <!-- ctyl:status:begin -->
-_Generated from the [`release-state`](https://github.com/asphyxia-mods/ctyl/tree/release-state) branch by the release pipeline. Last publication: 2026-11-25 20:12 UTC._
+_Generated from the [`release-state`](https://github.com/asphyxia-mods/ctyl/tree/release-state) branch by the release pipeline. Last publication: 2026-11-26 03:05 UTC._
 
 | Image | Java (release date) | Status | Change since previous image | Container built | Image published | Digest |
 |---|---|---|---|---|---|---|
-| `ghcr.io/asphyxia-mods/ctyl:java_8` | 1.8.0_514 (wolfi 8.514-r0)<br>unknown | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-25 09:55 UTC | [2026-11-25 10:08 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45588967853) | `sha256:ae00afb8c11e` |
-| `ghcr.io/asphyxia-mods/ctyl:java_11` | 11.0.33.1 (wolfi 11.0.33.1-r0)<br>2026-11-17 | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-25 09:55 UTC | [2026-11-25 10:07 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45588967853) | `sha256:729c387b2214` |
-| `ghcr.io/asphyxia-mods/ctyl:java_17` | 17.0.21.1 (wolfi 17.0.21.1-r1)<br>2026-11-17 | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-25 09:55 UTC | [2026-11-25 10:08 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45588967853) | `sha256:a472ecc9204a` |
+| `ghcr.io/asphyxia-mods/ctyl:java_8` | 1.8.0_514 (wolfi 8.514-r0)<br>unknown | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-26 02:52 UTC | [2026-11-26 03:04 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45744788461) | `sha256:09ae139d24e6` |
+| `ghcr.io/asphyxia-mods/ctyl:java_11` | 11.0.33.1 (wolfi 11.0.33.1-r0)<br>2026-11-17 | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-26 02:52 UTC | [2026-11-26 03:05 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45744788461) | `sha256:cdf4ee7e6858` |
+| `ghcr.io/asphyxia-mods/ctyl:java_17` | 17.0.21.1 (wolfi 17.0.21.1-r1)<br>2026-11-17 | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-26 02:52 UTC | [2026-11-26 03:04 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45744788461) | `sha256:6b56b3f1faa4` |
 | `ghcr.io/asphyxia-mods/ctyl:java_21` | 21.0.13.1 (wolfi 21.0.13.1-r1)<br>2026-11-17 | ✅ verified | wolfi Java package updated; Java runtime/source unchanged | 2026-11-25 15:02 UTC | [2026-11-25 15:14 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45639483747) | `sha256:72006d12cfe8` |
-| `ghcr.io/asphyxia-mods/ctyl:java_25` | 25.0.5.1 (wolfi 25.0.5.1-r2)<br>2026-11-17 | ✅ verified | wolfi Java package updated; Java runtime/source unchanged | 2026-11-25 15:01 UTC | [2026-11-25 15:14 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45639483747) | `sha256:d1d683a06f39` |
-| `ghcr.io/asphyxia-mods/ctyl:java_27` | 27.0.1.1 (wolfi 27.0.1.1-r2)<br>2026-11-17 | ✅ verified | wolfi Java package updated; Java runtime/source unchanged | 2026-11-25 20:01 UTC | [2026-11-25 20:12 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45689872129) | `sha256:1e2d0bc7d5bd` |
+| `ghcr.io/asphyxia-mods/ctyl:java_25` | 25.0.5.1 (wolfi 25.0.5.1-r2)<br>2026-11-17 | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-26 02:52 UTC | [2026-11-26 03:04 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45744788461) | `sha256:1d452efcc394` |
+| `ghcr.io/asphyxia-mods/ctyl:java_27` | 27.0.1.1 (wolfi 27.0.1.1-r2)<br>2026-11-17 | ✅ verified | Wolfi dependencies updated; Java runtime/source unchanged | 2026-11-26 02:52 UTC | [2026-11-26 03:04 UTC](https://github.com/asphyxia-mods/ctyl/actions/runs/45744788461) | `sha256:ddb04c2a8ea6` |
 
 Java release date is JAVA_VERSION_DATE reported by the bundled runtime, not the Wolfi package or container publication date. Unknown dates and unrecorded changes are not inferred from build times. Changes compare published image inputs; a Wolfi package rebuild can keep the same Java source. Identical daily rebuilds keep the original container build and publication times.
 
 <details><summary>Pinned references (exact digests)</summary>
 
 ```
-ghcr.io/asphyxia-mods/ctyl:java_8@sha256:ae00afb8c11e0b6d556de2c7b8285f21dd6a71f38e9143544fae289b9318737a
-ghcr.io/asphyxia-mods/ctyl:java_11@sha256:729c387b2214fbca5c6698278415f31a35639661ed28e63c8c9ee643fb9d24ef
-ghcr.io/asphyxia-mods/ctyl:java_17@sha256:a472ecc9204aca05412fdca68c092759aa75a07c14b0da418f128fe944386770
+ghcr.io/asphyxia-mods/ctyl:java_8@sha256:09ae139d24e69724c118613c7aaabbe32ddba5e566e4096c57fd10ec8396f5b2
+ghcr.io/asphyxia-mods/ctyl:java_11@sha256:cdf4ee7e68580ecffcd5d4010b8326821938f99db79ef4e51ce1f979460e8f31
+ghcr.io/asphyxia-mods/ctyl:java_17@sha256:6b56b3f1faa4655ec78006f34eafc99057e49ee7cc669a4746f0e88264da53a2
 ghcr.io/asphyxia-mods/ctyl:java_21@sha256:72006d12cfe849cdaa9d93cc5c170d1dd22f4c1083d72e26b0c546fddc4e1487
-ghcr.io/asphyxia-mods/ctyl:java_25@sha256:d1d683a06f395f582bf41ff1e3026ad319ed553e5b7159077d4bedc1c17d3089
-ghcr.io/asphyxia-mods/ctyl:java_27@sha256:1e2d0bc7d5bdbf58e6bbd202d2004adc5ef04cce003bd7e3dcdeef6038603a74
+ghcr.io/asphyxia-mods/ctyl:java_25@sha256:1d452efcc3947b49f1c4d74d89053b3df5e0ef302da0dae8206272f06b17d8be
+ghcr.io/asphyxia-mods/ctyl:java_27@sha256:ddb04c2a8ea6663e10f7871cf0f53cde5e0887a5f98cae68c4fa04202051fa3e
 ```
 
 </details>
