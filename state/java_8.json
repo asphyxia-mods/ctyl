@@ -16,7 +16,7 @@
   "source_repo": "https://github.com/openjdk/jdk8u",
   "inputs_digest": "sha256:c61573ed66bf459b5ef02b5f1241197e5d9611d939a90bcb2531b44f45e89303",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 46122293195,
+  "gate_run_id": 46150375483,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -39,7 +39,7 @@
   "built_at": "2026-11-28T07:46:21Z",
   "published_at": "2026-11-28T07:56:43Z",
   "latency_hours": 251.9,
-  "checked_at": "2026-11-28T07:56:43Z",
+  "checked_at": "2026-11-28T13:51:46Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",

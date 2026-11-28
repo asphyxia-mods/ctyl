@@ -17,7 +17,7 @@
   "source_repo": "https://github.com/openjdk/jdk27u",
   "inputs_digest": "sha256:4b7f7c2968965c50a195e20bf469b84425854078bd8cfdf58f93e26022d14de6",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 46122293195,
+  "gate_run_id": 46150375483,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -40,7 +40,7 @@
   "built_at": "2026-11-28T07:46:42Z",
   "published_at": "2026-11-28T07:57:12Z",
   "latency_hours": 254,
-  "checked_at": "2026-11-28T07:57:12Z",
+  "checked_at": "2026-11-28T13:52:02Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",

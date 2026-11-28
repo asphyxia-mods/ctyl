@@ -17,7 +17,7 @@
   "source_repo": "https://github.com/openjdk/jdk17u",
   "inputs_digest": "sha256:e57ebc636baf5423a10f6ccf5df452991c769c64750eaa438e50f042b692f4a6",
   "policy_digest": "sha256:98b25ca5cba208c2534eb13b89cfcc72f688943c69fc2f3ab370abe2c3f698f2",
-  "gate_run_id": 46122293195,
+  "gate_run_id": 46150375483,
   "status": "verified",
   "promoted": true,
   "findings": [
@@ -40,7 +40,7 @@
   "built_at": "2026-11-28T07:45:19Z",
   "published_at": "2026-11-28T07:57:27Z",
   "latency_hours": 296,
-  "checked_at": "2026-11-28T07:57:27Z",
+  "checked_at": "2026-11-28T13:51:06Z",
   "packages": {
     "aarch64": [
       "alsa-lib=1.2.16.1-r6",
